@@ -4,7 +4,7 @@ const route = require("./src/routes/index");
 const connectDB = require("./src/utils/connectDB"); 
 const cors = require('cors');
 const http = require('http');
-const socketSetup = require('./src/socket');
+const socketSetup = require('./src/sockets');
 
 const app = express();
 const server = http.createServer(app);
