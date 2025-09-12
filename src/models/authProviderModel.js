@@ -1,13 +1,25 @@
 module.exports = (sequelize, DataTypes) => {
   const AuthProvider = sequelize.define('AuthProvider', {
     provider: { 
-      type: DataTypes.ENUM('LOCAL', 'GOOGLE', 'FACEBOOK'), 
+      type: DataTypes.ENUM('LOCAL', 'GOOGLE'),
       allowNull: false 
     },
-    providerId: { type: DataTypes.STRING }, // GoogleID, FacebookID...
-    password: { type: DataTypes.STRING },   // chỉ dùng khi provider = LOCAL
+    providerId: { 
+      type: DataTypes.STRING, 
+      allowNull: true 
+    },
+    password: { 
+      type: DataTypes.STRING, 
+      allowNull: true  // chỉ dùng khi provider = LOCAL
+    },
   }, {
-    tableName: 'auth_providers'
+    tableName: 'auth_providers',
+    indexes: [
+      {
+        unique: true,
+        fields: ['provider', 'providerId'] // Mỗi providerId chỉ gắn với 1 user
+      }
+    ]
   });
 
   AuthProvider.associate = (models) => {

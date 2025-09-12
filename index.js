@@ -5,6 +5,7 @@ const connectDB = require("./src/utils/connectDB");
 const cors = require('cors');
 const http = require('http');
 const socketSetup = require('./src/sockets');
+const passport = require('./src/configs/passport.js');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,6 +21,8 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(passport.initialize());
 
 // Init routes
 route(app);
