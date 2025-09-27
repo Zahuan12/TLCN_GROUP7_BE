@@ -15,7 +15,7 @@ const io = socketSetup(server);
 app.set('io', io);
 
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'http://localhost:5173',
   credentials: true
 }));
 
@@ -29,7 +29,7 @@ route(app);
 
 // Kết nối DB và start server
 connectDB().then(() => {
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT;
   const hostname = process.env.HOST_NAME || "localhost";
 
   server.listen(port, hostname, () => {

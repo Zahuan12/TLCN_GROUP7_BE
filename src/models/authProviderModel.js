@@ -1,5 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
   const AuthProvider = sequelize.define('AuthProvider', {
+     id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
     provider: { 
       type: DataTypes.ENUM('LOCAL', 'GOOGLE'),
       allowNull: false 

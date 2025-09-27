@@ -65,50 +65,73 @@ class AuthService {
     await db.RefreshToken.destroy({ where: { userId } });
   }
    async loginWithGoogle(googleData) {
-    let user = await db.User.findOne({ where: { email: googleData.email } });
+  let user = await db.User.findOne({ where: { email: googleData.email } });
 
-    if (!user) {
-      user = await db.User.create({
-        email: googleData.email,
-        fullName: googleData.fullName,
-        role: 'STUDENT', // default hoặc để FE chọn role sau
-      });
-    }
-
-    // kiểm tra hoặc tạo AuthProvider
-    let provider = await db.AuthProvider.findOne({
-      where: { provider: 'GOOGLE', providerId: googleData.providerId }
+  if (!user) {
+    user = await db.User.create({
+      email: googleData.email,
+      fullName: googleData.fullName,
+      role: 'STUDENT', // default hoặc để FE chọn role sau
     });
+  }
 
-    if (!provider) {
-      await db.AuthProvider.create({
-        provider: 'GOOGLE',
-        providerId: googleData.providerId,
-        userId: user.id
+  // Kiểm tra hoặc tạo AuthProvider
+  let provider = await db.AuthProvider.findOne({
+    where: { provider: 'GOOGLE', providerId: googleData.providerId }
+  });
+
+  if (!provider) {
+    await db.AuthProvider.create({
+      provider: 'GOOGLE',
+      providerId: googleData.providerId,
+      userId: user.id
+    });
+  }
+
+  // 🔑 Kiểm tra refreshToken hiện tại trong DB (nếu có)
+  let existingRefresh = await db.RefreshToken.findOne({
+    where: { userId: user.id },
+    order: [['createdAt', 'DESC']]
+  });
+
+  let refreshToken;
+  if (existingRefresh) {
+    try {
+      // Nếu token cũ vẫn còn hạn → tái sử dụng
+      JwtUtils.verifyRefresh(existingRefresh.token);
+      refreshToken = existingRefresh.token;
+    } catch (err) {
+      // Token cũ hết hạn → tạo mới + update DB
+      refreshToken = JwtUtils.signRefresh({ id: user.id });
+      await existingRefresh.update({
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       });
     }
-
-    // tạo accessToken + refreshToken như login thường
-    const accessToken = JwtUtils.signAccess({ id: user.id, role: user.role });
-    const refreshToken = JwtUtils.signRefresh({ id: user.id });
-
+  } else {
+    // Chưa có refresh token nào → tạo mới
+    refreshToken = JwtUtils.signRefresh({ id: user.id });
     await db.RefreshToken.create({
       userId: user.id,
       token: refreshToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     });
-
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role
-      }
-    };
   }
+
+  // Luôn tạo access token mới (ngắn hạn)
+  const accessToken = JwtUtils.signAccess({ id: user.id, role: user.role });
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role
+    }
+  };
+}
 }
 
 module.exports = new AuthService();
