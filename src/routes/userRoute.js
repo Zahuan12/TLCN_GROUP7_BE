@@ -3,9 +3,10 @@ const router = express.Router();
 const UserController = require('../controllers/userController');
 const AuthMiddleware = require('../middlewares/AuthMiddleware');
 const RoleMiddleware = require('../middlewares/RoleMiddleware');
+const checkEmailMiddleware = require('../middlewares/checkEmailMiddleware');
 
 // CRUD routes
-router.post('/', UserController.create);
+router.post('/',checkEmailMiddleware, UserController.create);
 
 
 // áp dụng xác thực cho toàn bộ route.

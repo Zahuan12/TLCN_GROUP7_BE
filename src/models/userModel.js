@@ -15,13 +15,26 @@ module.exports = (sequelize, DataTypes) => {
       unique: true, 
       allowNull: true   // Cho phép null cho user Google
     },
-    fullName: { type: DataTypes.STRING },
+    fullName: { 
+      type: DataTypes.STRING 
+    },
     role: { 
       type: DataTypes.ENUM('STUDENT', 'COMPANY', 'ADMIN'), 
       allowNull: false 
     },
-    isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
-    createdDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    isActive: { 
+      type: DataTypes.BOOLEAN, 
+      defaultValue: true 
+    },
+    verifyStatus: {
+      type: DataTypes.ENUM('INVALID', 'UNVERIFIED', 'VERIFIED'),
+      defaultValue: 'UNVERIFIED',
+      allowNull: false
+    },
+    createdDate: { 
+      type: DataTypes.DATE, 
+      defaultValue: DataTypes.NOW 
+    }
   }, {
     tableName: 'users',
     timestamps: true,

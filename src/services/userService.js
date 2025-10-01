@@ -1,4 +1,5 @@
 const db = require('../models');
+const MailService = require("./mailService");
 const bcrypt = require('bcryptjs');
 
 class UserService {
@@ -24,6 +25,7 @@ class UserService {
       providerId: provider === 'GOOGLE' ? providerId : null,
       password: hashedPassword
     });
+    await MailService.sendWelcomeEmail(user);
 
     return user;
   }
