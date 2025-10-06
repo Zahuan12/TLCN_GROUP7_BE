@@ -204,7 +204,10 @@ async verifyUsername(username) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
   
       // Cập nhật lại mật khẩu
-      await user.update({ password: hashedPassword });
+      await db.AuthProvider.update(
+        { password: hashedPassword },
+        { where: { userId: user.id, provider: 'LOCAL' } }
+      );
   
       return {
       id: user.id,
