@@ -193,6 +193,25 @@ async verifyUsername(username) {
 
     return { message: 'OTP hợp lệ, bạn có thể đổi mật khẩu.', userId: user.id };
   }
+
+  async changePassword(username, newPassword, confirmNewpassword) {
+      const user = await db.User.findOne({ where: { username } });
+      if (!user) throw new Error('Người dùng không tồn tại');
+      if (newPassword !== confirmNewpassword) {
+        throw new Error('Mật khẩu mới và xác nhận mật khẩu không khớp');
+      }
+      // Hash mật khẩu mới
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+  
+      // Cập nhật lại mật khẩu
+      await user.update({ password: hashedPassword });
+  
+      return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
+    }
 }
 
 module.exports = new AuthService();

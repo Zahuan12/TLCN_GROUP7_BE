@@ -76,6 +76,15 @@ async verifyOTP(req, res) {
     }
   }
 
+  async changePassword(req, res) {
+    try {
+      const { username, newPassword, confirmNewPassword } = req.body;
+      const result = await AuthService.changePassword(username, newPassword, confirmNewPassword);
+      return ApiResponse.success(res, 'Đổi mật khẩu thành công', result);
+    } catch (error) {
+      return ApiResponse.error(res, error.message, 400);
+    }
+  }
   
 }
 

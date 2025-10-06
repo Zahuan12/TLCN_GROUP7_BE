@@ -55,6 +55,8 @@ class UserService {
     return user;
   }
 
+  
+
   async deleteUser(id) {
     const user = await db.User.findByPk(id);
     if (!user) throw new Error('Không tìm thấy user');

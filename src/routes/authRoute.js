@@ -15,6 +15,7 @@ router.get('/google/callback',
 );
 router.post('/verify-username', authcontroller.verifyUsername);
 router.post('/verify-otp', authcontroller.verifyOTP);
+router.post('/reset-password', authcontroller.changePassword);
 
 
 module.exports = router 
