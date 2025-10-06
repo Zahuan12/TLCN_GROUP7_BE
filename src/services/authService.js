@@ -1,6 +1,9 @@
 const db = require('../models');
+const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const JwtUtils = require('../utils/jwt');
+const mailService = require('../services/mailService');
+const OtpGenerator = require("../utils/otpGenerator");
 
 class AuthService {
   async login(username, password) {
@@ -88,7 +91,7 @@ class AuthService {
     });
   }
 
-  // 🔑 Kiểm tra refreshToken hiện tại trong DB (nếu có)
+  // Kiểm tra refreshToken hiện tại trong DB (nếu có)
   let existingRefresh = await db.RefreshToken.findOne({
     where: { userId: user.id },
     order: [['createdAt', 'DESC']]
@@ -132,6 +135,64 @@ class AuthService {
     }
   };
 }
+
+async verifyUsername(username) {
+    // 1️⃣ Tìm user theo username
+    const user = await db.User.findOne({ where: { username } });
+    if (!user) throw new Error('Người dùng không tồn tại');
+    if (!user.isActive) throw new Error('Tài khoản đang bị khóa');
+    if (user.verifyStatus !== 'VERIFIED') throw new Error('Tài khoản chưa được xác thực');
+    // if (user.AuthProviders[0].provider !== 'LOCAL')
+    //   throw new Error('Tài khoản không hỗ trợ đổi mật khẩu');
+
+    // 2️⃣ Tạo mã OTP ngẫu nhiên
+    const otpCode = OtpGenerator.generate(6);
+
+    // 3️⃣ Lưu OTP vào bảng Otp (liên kết với user)
+    await db.Otp.create({
+      userId: user.id,
+      otp: otpCode,
+      purpose: 'FORGOT_PASSWORD',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 phút
+      used: false,
+    });
+
+    // 4️⃣ Gửi email OTP cho người dùng
+    await mailService.sendOTPEmail(user, otpCode);
+
+    // 5️⃣ Trả dữ liệu cơ bản cho controller
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
+  }
+
+   async verifyOTP( username, otp ) {
+
+    // Tìm user
+    const user = await db.User.findOne({ where: { username } });
+    if (!user) throw new Error('Người dùng không tồn tại');
+
+    // Tìm OTP mới nhất chưa dùng của user
+    const otpRecord = await db.Otp.findOne({
+      where: {
+        userId: user.id,
+        otp: otp,
+        used: false,
+        expiresAt: { [Op.gt]: new Date() } // chưa hết hạn
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!otpRecord) throw new Error('Mã OTP không hợp lệ hoặc đã hết hạn');
+
+    // Cập nhật used = true để tránh tái sử dụng
+    otpRecord.used = true;
+    await otpRecord.save();
+
+    return { message: 'OTP hợp lệ, bạn có thể đổi mật khẩu.', userId: user.id };
+  }
 }
 
 module.exports = new AuthService();

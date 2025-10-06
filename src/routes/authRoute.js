@@ -13,6 +13,8 @@ router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/login', session: false }),
   authcontroller.googleCallback
 );
+router.post('/verify-username', authcontroller.verifyUsername);
+router.post('/verify-otp', authcontroller.verifyOTP);
 
 
 module.exports = router 

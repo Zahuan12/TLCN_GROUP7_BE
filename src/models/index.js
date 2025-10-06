@@ -27,6 +27,7 @@ db.StudentProgress = require("./studentProgressModel")(sequelize, Sequelize.Data
 db.ChallengeTest = require("./challengeTestModel")(sequelize, Sequelize.DataTypes);
 db.ChallengeSubmission = require("./challengeSubmission")(sequelize, Sequelize.DataTypes);
 db.CareerTest = require("./careerTestModel")(sequelize, Sequelize.DataTypes);
+db.Otp = require("./otpModel")(sequelize, Sequelize.DataTypes);
 
 
 // Setup associations

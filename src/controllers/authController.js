@@ -1,3 +1,4 @@
+const authService = require('../services/authService');
 const AuthService = require('../services/authService');
 const ApiResponse = require('../utils/ApiResponse');
 
@@ -53,7 +54,29 @@ class AuthController {
   }
 }
 
+async verifyUsername(req, res) {
+  try {
+    const { username } = req.body;
+    const result = await authService.verifyUsername(username);
+    return ApiResponse.success(res, 'Đã gửi mã xác thực', result);
+  } catch (error) {
+    return ApiResponse.error(res, error.message, 400);
+  }
+}
+async verifyOTP(req, res) {
+    try {
+      const { username, otp } = req.body;
 
+      // Gọi xuống service kiểm tra OTP
+      const result = await authService.verifyOTP(username, otp );
+
+      return ApiResponse.success(res, 'Xác thực mã OTP thành công.', result);
+    } catch (error) {
+      return ApiResponse.error(res, error.message, 400);
+    }
+  }
+
+  
 }
 
 module.exports = new AuthController();
