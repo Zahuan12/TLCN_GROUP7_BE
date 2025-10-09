@@ -11,14 +11,14 @@ class UserController {
     }
   }
 
-  async getAll(req, res) {
-    try {
-      const users = await UserService.getUsers();
-      return ApiResponse.success(res, 'Lấy danh sách user thành công', users);
-    } catch (error) {
-      return ApiResponse.error(res, error.message, 500);
-    }
-  }
+  // async getAll(req, res) {
+  //   try {
+  //     const users = await UserService.getUsers();
+  //     return ApiResponse.success(res, 'Lấy danh sách user thành công', users);
+  //   } catch (error) {
+  //     return ApiResponse.error(res, error.message, 500);
+  //   }
+  // }
 
   async getById(req, res) {
     try {

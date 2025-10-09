@@ -2,7 +2,7 @@ const db = require('../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const JwtUtils = require('../utils/jwt');
-const mailService = require('../services/mailService');
+const mailService = require('./mailService');
 const OtpGenerator = require("../utils/otpGenerator");
 
 class AuthService {

@@ -1,5 +1,6 @@
 const db = require('../models');
-const MailService = require("./mailService");
+// const MailService = require("./mailService");
+const kafkaModule = require("../kafka");
 const bcrypt = require('bcryptjs');
 
 class UserService {
@@ -25,7 +26,12 @@ class UserService {
       providerId: provider === 'GOOGLE' ? providerId : null,
       password: hashedPassword
     });
-    await MailService.sendWelcomeEmail(user);
+    await kafkaModule.producers.mailProducer.sendMailEvent({
+      to: user.email,
+      subject: "Welcome!",
+      text: `Chào mừng ${user.username}!`,
+});
+
 
     return user;
   }

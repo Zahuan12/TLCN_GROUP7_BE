@@ -6,6 +6,7 @@ const cors = require('cors');
 const http = require('http');
 const socketSetup = require('./src/sockets');
 const passport = require('./src/configs/passport.js');
+const kafkaModule = require("./src/kafka");
 
 const app = express();
 const server = http.createServer(app);
@@ -28,7 +29,8 @@ app.use(passport.initialize());
 route(app);
 
 // Kết nối DB và start server
-connectDB().then(() => {
+connectDB().then(async() => {
+    await kafkaModule.init();
   const port = process.env.PORT;
   const hostname = process.env.HOST_NAME || "localhost";
 
