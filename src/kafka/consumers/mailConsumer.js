@@ -13,8 +13,16 @@ class MailConsumer {
       eachMessage: async ({ topic, partition, message }) => {
         const data = JSON.parse(message.value.toString());
         console.log("[Kafka] Received mail event:", data);
-        mailService.sendMail(data);
-        // TODO: gọi MailService.sendMail(data) nếu cần gửi thật
+        try {
+          await mailService.sendWelcomeEmail({
+            email: data.to,              // lấy từ event Kafka
+            fullName: data.fullName,     // hoặc username, tùy bạn gửi từ Producer
+            username: data.username
+          });
+          console.log("[MailConsumer] Email đã được gửi tới:", data.to);
+        } catch (err) {
+          console.error("[MailConsumer] Lỗi khi gửi email:", err.message);
+        }
       },
     });
 
