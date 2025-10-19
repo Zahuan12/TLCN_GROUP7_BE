@@ -28,6 +28,7 @@ db.ChallengeTest = require("./challengeTestModel")(sequelize, Sequelize.DataType
 db.ChallengeSubmission = require("./challengeSubmission")(sequelize, Sequelize.DataTypes);
 db.CareerTest = require("./careerTestModel")(sequelize, Sequelize.DataTypes);
 db.Otp = require("./otpModel")(sequelize, Sequelize.DataTypes);
+db.BlogMedia = require("./BlogMediaModel")(sequelize, Sequelize.DataTypes);
 
 
 // Setup associations

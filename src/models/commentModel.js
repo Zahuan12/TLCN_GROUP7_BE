@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     postId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'blog', key: 'id' }, // ✅ fix: blog
+      references: { model: 'blogs', key: 'id' }, // ✅ fix: blog
       onDelete: 'CASCADE'
     },
     parentId: {
