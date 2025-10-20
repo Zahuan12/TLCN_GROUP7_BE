@@ -11,15 +11,6 @@ class UserController {
     }
   }
 
-  // async getAll(req, res) {
-  //   try {
-  //     const users = await UserService.getUsers();
-  //     return ApiResponse.success(res, 'Lấy danh sách user thành công', users);
-  //   } catch (error) {
-  //     return ApiResponse.error(res, error.message, 500);
-  //   }
-  // }
-
   async getById(req, res) {
     try {
       const user = await UserService.getUserById(req.params.id);
@@ -44,6 +35,28 @@ class UserController {
       return ApiResponse.success(res, 'Xoá user thành công');
     } catch (error) {
       return ApiResponse.error(res, error.message, 404);
+    }
+  }
+
+  async updateRole(req, res) {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      console.log(`Updating role for user ${id} to ${role}`);
+
+      // Validate role
+      const validRoles = ['STUDENT', 'COMPANY'];
+      if (!validRoles.includes(role)) {
+        return ApiResponse.error(res, 'Invalid role. Must be STUDENT, COMPANY', 400);
+      }
+
+      const updatedUser = await UserService.updateRole(id, role);
+
+      return ApiResponse.success(res, 'Role updated successfully', updatedUser);
+    } catch (error) {
+      console.error('Update role error:', error);
+      return ApiResponse.error(res, error.message, 500);
     }
   }
 }
