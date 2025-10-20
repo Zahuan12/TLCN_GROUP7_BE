@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     role: { 
       type: DataTypes.ENUM('STUDENT', 'COMPANY', 'ADMIN'), 
-      allowNull: false 
+      allowNull: true 
     },
     isActive: { 
       type: DataTypes.BOOLEAN, 

@@ -13,6 +13,7 @@ router.post('/',checkEmailMiddleware, UserController.create);
 router.use(AuthMiddleware.verifyToken); 
 
 router.put('/:id', UserController.update);
+router.put('/:id/role', UserController.updateRole);
 
 // áp dụng phân quyền cho route bên dưới.
 router.use(RoleMiddleware.checkRole("admin"));

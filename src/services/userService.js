@@ -30,7 +30,7 @@ class UserService {
       to: user.email,
       subject: "Welcome!",
       text: `Chào mừng ${user.username}!`,
-});
+    });
 
 
     return user;
@@ -68,6 +68,20 @@ class UserService {
 
     await user.destroy(); // soft delete
     return true;
+  }
+
+  async updateUserRole(id, role) {
+    const user = await db.User.findByPk(id);
+    if (!user) throw new Error('Không tìm thấy user');
+
+    // Validate role
+    const validRoles = ['STUDENT', 'COMPANY', 'ADMIN'];
+    if (!validRoles.includes(role)) {
+      throw new Error('Vai trò không hợp lệ');
+    }
+
+    await user.update({ role });
+    return user;
   }
 }
 
