@@ -11,6 +11,18 @@ class CareerTestController {
       return ApiResponse.error(res, error.message, 404);
     }
   }
+
+    async submitTest(req, res) {
+    try {
+      const userId = req.user.id; // lấy từ middleware xác thực
+      const answers = req.body.answers; // mảng [{ questionIndex: 1, option: 'A' }, ...]
+
+      const result = await CareerTestService.evaluateCareerTest(userId, answers);
+      return ApiResponse.success(res, 'Nộp bài trắc nghiệm thành công', result);
+    } catch (error) {
+      return ApiResponse.error(res, error.message, 400);
+    }
+  }
 }
 
 module.exports = new CareerTestController();

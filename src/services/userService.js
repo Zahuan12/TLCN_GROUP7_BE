@@ -20,6 +20,18 @@ class UserService {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
+      // ✅ Thêm bản ghi student trống (chỉ cần userId, các trường khác có thể null)
+    if (role === 'STUDENT') {
+      await db.Student.create({
+        userId: user.id,
+        studentId: null,
+        university: null,
+        major: null,
+        graduationYear: null,
+        careerInterest: null
+      });
+    }
+
     await db.AuthProvider.create({
       userId: user.id,
       provider,
