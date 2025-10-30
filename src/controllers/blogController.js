@@ -3,13 +3,17 @@ const BlogService = require('../services/blogService');
 const ApiResponse = require('../utils/ApiResponse');
 
 class BlogController {
+
   async create(req, res) {
     try {
-      // req.user.id expected from auth middleware
-      const result = await BlogService.createBlog(req.user.id, req.body, req.files);
-      return ApiResponse.success(res, 'Tạo blog thành công (media đang xử lý)', result, 201);
+      const authorId = req.user.id;
+      const blogData = req.body;
+      const blogFiles = req.files;
+
+      const result = await BlogService.createBlog(authorId, blogData, blogFiles);
+      return ApiResponse.success(res, 'Tạo blog thành công', result, 201);
     } catch (error) {
-      console.error(error);
+      console.error('[BlogController.create] ❌', error);
       return ApiResponse.error(res, error.message || 'Lỗi tạo blog', 400);
     }
   }
@@ -18,36 +22,54 @@ class BlogController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
+
       const result = await BlogService.getAllBlogs(page, limit);
       return ApiResponse.success(res, 'Lấy danh sách blog thành công', result);
     } catch (error) {
+      console.error('[BlogController.getAll] ❌', error);
       return ApiResponse.error(res, error.message || 'Lỗi server', 500);
     }
   }
 
+ 
   async getById(req, res) {
     try {
-      const result = await BlogService.getBlogById(req.params.id);
+      const blogId = req.params.id;
+
+      const result = await BlogService.getBlogById(blogId);
       return ApiResponse.success(res, 'Lấy blog thành công', result);
     } catch (error) {
+      console.error('[BlogController.getById] ❌', error);
       return ApiResponse.error(res, error.message || 'Không tìm thấy', 404);
     }
   }
 
+  
   async update(req, res) {
     try {
-      const result = await BlogService.updateBlog(req.user.id, req.params.id, req.body, req.files);
-      return ApiResponse.success(res, 'Cập nhật blog thành công (media có thể đang xử lý)', result);
+      const authorId = req.user.id;
+      const blogId = req.params.id;
+      const updateData = req.body;
+      const updateFiles = req.files;
+
+      const result = await BlogService.updateBlog(authorId, blogId, updateData, updateFiles);
+      return ApiResponse.success(res, 'Cập nhật blog thành công', result);
     } catch (error) {
+      console.error('[BlogController.update] ❌', error);
       return ApiResponse.error(res, error.message || 'Lỗi cập nhật', 400);
     }
   }
 
+  
   async delete(req, res) {
     try {
-      await BlogService.deleteBlog(req.user.id, req.params.id);
+      const authorId = req.user.id;
+      const blogId = req.params.id;
+
+      await BlogService.deleteBlog(authorId, blogId);
       return ApiResponse.success(res, 'Xoá blog thành công');
     } catch (error) {
+      console.error('[BlogController.delete] ❌', error);
       return ApiResponse.error(res, error.message || 'Không tìm thấy', 404);
     }
   }

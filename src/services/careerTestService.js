@@ -63,6 +63,15 @@ class CareerTestService {
     };
     return desc[career] || 'Không xác định';
   }
+
+   async updatecareerInterest(studentId, careerInterest) {
+        const student = await db.Student.findOne({ where: { userId: studentId } });
+        if (!student) throw new Error('Student not found');
+        student.careerInterest = careerInterest;
+        await student.save();
+        return student;
+    }   
+    
 }
 
 module.exports = new CareerTestService();

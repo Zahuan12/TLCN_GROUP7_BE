@@ -1,12 +1,11 @@
 const authService = require('../services/authService');
-const AuthService = require('../services/authService');
 const ApiResponse = require('../utils/ApiResponse');
 
 class AuthController {
   async login(req, res) {
     try {
       const { username, password } = req.body;
-      const result = await AuthService.login(username, password);
+      const result = await authService.login(username, password);
       return ApiResponse.success(res, 'Đăng nhập thành công', result);
     } catch (error) {
       return ApiResponse.error(res, error.message, 401);
@@ -18,7 +17,7 @@ class AuthController {
       const { refreshToken } = req.body;
       if (!refreshToken) throw new Error("Không có refresh token");
 
-      const result = await AuthService.refreshToken(refreshToken);
+      const result = await authService.refreshToken(refreshToken);
       return ApiResponse.success(res, "Refresh token thành công", result);
     } catch (error) {
       return ApiResponse.error(res, error.message, 401);
@@ -28,7 +27,7 @@ class AuthController {
   async logout(req, res) {
     try {
       const userId = req.user.id; // req.user có được từ middleware verify access token
-      await AuthService.logout(userId);
+      await authService.logout(userId);
       return ApiResponse.success(res, "Đăng xuất thành công");
     } catch (error) {
       return ApiResponse.error(res, error.message, 500);
@@ -38,7 +37,7 @@ class AuthController {
    async googleCallback(req, res) {
   try {
     const googleData = req.user;
-    const result = await AuthService.loginWithGoogle(googleData);
+    const result = await authService.loginWithGoogle(googleData);
 
     if (!process.env.FRONTEND_URL) {
       throw new Error("FRONTEND_URL is not set in environment variables");
@@ -79,7 +78,7 @@ async verifyOTP(req, res) {
   async changePassword(req, res) {
     try {
       const { username, newPassword, confirmNewPassword } = req.body;
-      const result = await AuthService.changePassword(username, newPassword, confirmNewPassword);
+      const result = await authService.changePassword(username, newPassword, confirmNewPassword);
       return ApiResponse.success(res, 'Đổi mật khẩu thành công', result);
     } catch (error) {
       return ApiResponse.error(res, error.message, 400);

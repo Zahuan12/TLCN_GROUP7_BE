@@ -1,4 +1,5 @@
 // controllers/careerTestController.js
+const careerTestService = require('../services/careerTestService');
 const CareerTestService = require('../services/careerTestService');
 const ApiResponse = require('../utils/ApiResponse');
 
@@ -23,6 +24,17 @@ class CareerTestController {
       return ApiResponse.error(res, error.message, 400);
     }
   }
+
+  async updatecareerInterest(req, res) {
+        try {
+            const studentId = req.user.id;
+            const { careerInterest } = req.body;
+            const result = await careerTestService.updatecareerInterest(studentId, careerInterest);
+            return ApiResponse.success(res, 'update career interest success', result);
+        } catch (error) {
+            return ApiResponse.error(res, error.message, 400);
+        }
+    }
 }
 
 module.exports = new CareerTestController();

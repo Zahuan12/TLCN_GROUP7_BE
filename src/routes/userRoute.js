@@ -16,7 +16,7 @@ router.put('/:id', UserController.update);
 router.put('/:id/role', UserController.updateRole);
 
 // áp dụng phân quyền cho route bên dưới.
-router.use(RoleMiddleware.checkRole("admin"));
+router.use(RoleMiddleware.checkRole("ADMIN"));
 
 // router.get('/', UserController.getAll);
 router.get('/:id', UserController.getById);

@@ -9,7 +9,8 @@ router.get('/', CareerTestController.getTest);
 
 // Người dùng phải đăng nhập mới được nộp bài
 router.use(AuthMiddleware.verifyToken);
-router.use(RoleMiddleware.checkRole("admin"));
+router.use(RoleMiddleware.checkRole("STUDENT"));
 router.post('/submit', CareerTestController.submitTest);
+router.put('/career-interest', CareerTestController.updatecareerInterest);
 
 module.exports = router;

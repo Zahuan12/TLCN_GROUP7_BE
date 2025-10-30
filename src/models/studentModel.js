@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     university: { type: DataTypes.STRING },
     major: { type: DataTypes.STRING },
     graduationYear: { type: DataTypes.INTEGER },
-    careerInterest: { type: DataTypes.STRING }, // ví dụ: 'BACKEND', 'FRONTEND', 'BA'
+    careerInterest: { type: DataTypes.JSON }, // ví dụ: 'BACKEND', 'FRONTEND', 'BA'
   }, {
     tableName: 'students'
   });

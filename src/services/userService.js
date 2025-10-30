@@ -31,6 +31,16 @@ class UserService {
         careerInterest: null
       });
     }
+    if (role === 'COMPANY') {
+      await db.Company.create({
+        userId: user.id,
+        companyId: null,
+        companyName: null,
+        industry: null,
+        website: null,
+        description: null
+      });
+    }
 
     await db.AuthProvider.create({
       userId: user.id,
