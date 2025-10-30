@@ -64,14 +64,15 @@ class CareerTestService {
     return desc[career] || 'Không xác định';
   }
 
-   async updatecareerInterest(studentId, careerInterest) {
+   async updatemajor(studentId, major) {
         const student = await db.Student.findOne({ where: { userId: studentId } });
         if (!student) throw new Error('Student not found');
-        student.careerInterest = careerInterest;
+        student.major = major;
+        //student.careerInterest = major;
         await student.save();
         return student;
     }   
-    
+
 }
 
 module.exports = new CareerTestService();

@@ -25,12 +25,12 @@ class CareerTestController {
     }
   }
 
-  async updatecareerInterest(req, res) {
+  async updatemajor(req, res) {
         try {
             const studentId = req.user.id;
-            const { careerInterest } = req.body;
-            const result = await careerTestService.updatecareerInterest(studentId, careerInterest);
-            return ApiResponse.success(res, 'update career interest success', result);
+            const { major } = req.body;
+            const result = await careerTestService.updatemajor(studentId, major);
+            return ApiResponse.success(res, 'update major success', result);
         } catch (error) {
             return ApiResponse.error(res, error.message, 400);
         }

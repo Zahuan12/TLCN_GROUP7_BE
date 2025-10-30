@@ -11,6 +11,6 @@ router.get('/', CareerTestController.getTest);
 router.use(AuthMiddleware.verifyToken);
 router.use(RoleMiddleware.checkRole("STUDENT"));
 router.post('/submit', CareerTestController.submitTest);
-router.put('/career-interest', CareerTestController.updatecareerInterest);
+router.put('/major', CareerTestController.updatemajor);
 
 module.exports = router;
