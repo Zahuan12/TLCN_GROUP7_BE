@@ -30,7 +30,7 @@ route(app);
 
 // Kết nối DB và start server
 connectDB().then(async() => {
-    await kafkaModule.init();
+  await kafkaModule.init();
   const port = process.env.PORT;
   const hostname = process.env.HOST_NAME || "localhost";
 

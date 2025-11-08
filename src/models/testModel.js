@@ -8,7 +8,18 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false 
     },
     content: { type: DataTypes.JSON }, // quiz hoặc coding
-    maxScore: { type: DataTypes.FLOAT, defaultValue: 100 }
+    maxScore: { type: DataTypes.FLOAT, defaultValue: 100 },
+    lessonId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'lessons', key: 'id' }
+    },
+    careerPathId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'career_paths', key: 'id' }
+    }
+
   }, {
     tableName: 'tests',
     timestamps: true

@@ -3,7 +3,11 @@ module.exports = (sequelize, DataTypes) => {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     title: { type: DataTypes.STRING, allowNull: false },
     content: { type: DataTypes.TEXT }, // nội dung bài học
-    order: { type: DataTypes.INTEGER } // thứ tự trong lộ trình
+    order: { type: DataTypes.INTEGER }, // thứ tự trong lộ trình
+    careerPathId: {
+      type: DataTypes.UUID,
+      references: { model: 'career_paths', key: 'id' },
+      onDelete: 'CASCADE'}
   }, {
     tableName: 'lessons',
     timestamps: true

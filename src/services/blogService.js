@@ -1,13 +1,11 @@
-// services/blogService.js
 const db = require('../models');
-const slugify = require('slugify');
 const cloudinary = require('../configs/cloudinary');
 const { blogMediaProducer } = require('../kafka/producers');
 require('dotenv').config();
 
 class BlogService {
   /**
-   * 🧩 Helper: gửi event upload qua Kafka
+   * Gửi sự kiện upload qua Kafka
    */
   async sendUploadEvents(blogId, createdMedia, allFiles) {
     for (let i = 0; i < createdMedia.length; i++) {
@@ -25,31 +23,35 @@ class BlogService {
         bufferBase64: file.buffer.toString('base64'),
       });
 
-      console.log(`[Kafka] 🚀 Sent upload event for blogId=${blogId}, mediaId=${media.id}`);
+      console.log(`[Kafka] Sent upload event for blogId=${blogId}, mediaId=${media.id}`);
     }
   }
 
   /**
-   * 📝 Tạo blog mới
+   * 🆕 Tạo blog mới
    */
   async createBlog(authorId, data, files) {
-    const { title, content, category, status } = data;
-    if (!title || !content) throw new Error('Thiếu tiêu đề hoặc nội dung');
+    const { content, category, status } = data;
+    if (!content && (!files || Object.keys(files).length === 0))
+      throw new Error('Bài viết cần có nội dung hoặc file đính kèm');
 
-    const slug = slugify(title, { lower: true, strict: true });
     const t = await db.sequelize.transaction();
 
     try {
-      // Tạo blog
+      // Tạo blog mới
       const newBlog = await db.Blog.create(
-        { title, slug, content, category, status: status || 'published', authorId },
+        {
+          content,
+          category: category || null,
+          status: status || 'published',
+          authorId,
+        },
         { transaction: t }
       );
 
-      // Gom tất cả file/ảnh
+      // Gom file upload
       const allFiles = [...(files?.images || []), ...(files?.files || [])];
 
-      // Tạo record media
       const mediaRecords = allFiles.map((f) => ({
         blogId: newBlog.id,
         url: null,
@@ -66,7 +68,7 @@ class BlogService {
 
       await t.commit();
 
-      // Sau khi commit mới gửi Kafka event
+      // Sau khi commit, gửi event Kafka
       if (createdMedia.length) {
         await this.sendUploadEvents(newBlog.id, createdMedia, allFiles);
       }
@@ -95,14 +97,10 @@ class BlogService {
 
     try {
       const updateData = {
-        title: data.title || blog.title,
-        content: data.content || blog.content,
-        category: data.category || blog.category,
-        status: data.status || blog.status,
+        content: data.content ?? blog.content,
+        category: data.category ?? blog.category,
+        status: data.status ?? blog.status,
       };
-      if (data.title && data.title !== blog.title) {
-        updateData.slug = slugify(data.title, { lower: true, strict: true });
-      }
 
       await blog.update(updateData, { transaction: t });
 
@@ -136,7 +134,7 @@ class BlogService {
   }
 
   /**
-   * 🌤 Upload và cập nhật media (dùng cho consumer)
+   * 📤 Upload và cập nhật media (Kafka Consumer)
    */
   async uploadAndUpdateBlogMedia(blogMediaId, bufferBase64, type, blogId) {
     try {
@@ -161,22 +159,17 @@ class BlogService {
         { where: { id: blogMediaId } }
       );
 
-      console.log(
-        `[BlogService] ✅ Uploaded blogId=${blogId}, mediaId=${blogMediaId} → ${uploadResult.secure_url}`
-      );
+      console.log(`[BlogService] ✅ Uploaded blogId=${blogId}, mediaId=${blogMediaId}`);
       return uploadResult.secure_url;
     } catch (error) {
-      console.error(
-        `[BlogService] ❌ Upload failed blogId=${blogId}, mediaId=${blogMediaId}:`,
-        error.message
-      );
+      console.error(`[BlogService] ❌ Upload failed blogId=${blogId}: ${error.message}`);
       await db.BlogMedia.update({ status: 'error' }, { where: { id: blogMediaId } });
       throw error;
     }
   }
 
   /**
-   * 🧭 Các hàm phụ trợ khác
+   * 🧭 Lấy danh sách và chi tiết
    */
   async getAllBlogs(page = 1, limit = 10) {
     const offset = (page - 1) * limit;

@@ -41,7 +41,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     }
   }, {
-    tableName: 'blog_media',
+    tableName: 'blog_medias',
     timestamps: true,
     paranoid: false
   });

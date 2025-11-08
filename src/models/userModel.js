@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
     fullName: { 
       type: DataTypes.STRING 
     },
+    address: {                     // 👈 Thêm trường địa chỉ
+      type: DataTypes.STRING(255), // đủ dài cho tên đường, phường, quận
+      allowNull: true              // không bắt buộc
+    },
     role: { 
       type: DataTypes.ENUM('STUDENT', 'COMPANY', 'ADMIN'), 
       allowNull: true 
