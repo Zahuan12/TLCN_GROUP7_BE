@@ -35,7 +35,7 @@ class UserService {
       await db.Company.create({
         userId: user.id,
         companyId: null,
-        companyName: null,
+        companyName:"unknown",
         industry: null,
         website: null,
         description: null
