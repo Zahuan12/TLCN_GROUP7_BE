@@ -7,8 +7,8 @@ const AuthMiddleware = require('../middlewares/AuthMiddleware');
 router.use(AuthMiddleware.verifyToken); 
 
 router.post('/', commentController.createComment);
-router.get('/:blogId', commentController.getCommentsByBlogId);
-router.delete('/:commentId', commentController.deleteComment);
+router.get('/:blogId', commentController.getCommentsByBlogId); 
+router.delete('/:commentId', commentController.deleteComment); 
 router.put('/:commentId', commentController.updateComment); 
 
 module.exports = router;
