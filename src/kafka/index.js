@@ -10,18 +10,21 @@ class KafkaManager {
     this.producers = {
       mailProducer: new producers.mailProducer(this.kafka),
       blogMediaProducer: new producers.blogMediaProducer(this.kafka),
+      courseImageProducer: new producers.courseImageProducer(this.kafka),
     };
 
     // Khởi tạo tất cả consumer
     this.consumers = {
       mailConsumer: new consumers.mailConsumer(this.kafka),
       blogMediaConsumer: new consumers.blogMediaConsumer(this.kafka),
+      courseImageConsumer: new consumers.courseImageConsumer(this.kafka),
     };
 
     // Danh sách các topic cần check/tạo
     this.topics = [
       { topic: "mail-events", numPartitions: 1, replicationFactor: 1 },
       { topic: "blog-media-events", numPartitions: 1, replicationFactor: 1 },
+      { topic: "course-image-events", numPartitions: 1, replicationFactor: 1 },
     ];
   }
 

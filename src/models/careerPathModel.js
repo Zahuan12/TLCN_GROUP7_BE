@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     title: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT },
+    image: { 
+      type: DataTypes.STRING, // URL lưu trên Cloudinary
+      allowNull: true 
+    },
     companyId: {
       type: DataTypes.UUID,
       allowNull: false,

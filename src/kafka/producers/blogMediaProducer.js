@@ -15,7 +15,7 @@ class BlogMediaProducer {
    */
   async sendMediaUploadEvent(data) {
     if (!data.blogMediaId) {
-      console.error("[Kafka] ❌ Thiếu blogMediaId trong payload:", data);
+      console.error("[Kafka] Thiếu blogMediaId trong payload:", data);
       return;
     }
 
@@ -24,7 +24,7 @@ class BlogMediaProducer {
       messages: [{ key: data.blogMediaId, value: JSON.stringify(data) }],
     });
 
-    console.log(`[Kafka] 📤 Media event sent for BlogMedia ${data.blogMediaId}`);
+    console.log(`[Kafka] Media event sent for BlogMedia ${data.blogMediaId}`);
   }
 }
 

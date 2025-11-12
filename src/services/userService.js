@@ -23,8 +23,7 @@ class UserService {
       // ✅ Thêm bản ghi student trống (chỉ cần userId, các trường khác có thể null)
     if (role === 'STUDENT') {
       await db.Student.create({
-        userId: user.id,
-        studentId: null,
+        studentId: user.id,
         university: null,
         major: null,
         graduationYear: null,
@@ -33,9 +32,8 @@ class UserService {
     }
     if (role === 'COMPANY') {
       await db.Company.create({
-        userId: user.id,
-        companyId: null,
-        companyName: null,
+        companyId: user.id,
+        companyName: "unkown",
         industry: null,
         website: null,
         description: null

@@ -9,11 +9,11 @@ class MailProducer {
   }
 
   /**
-   * 📨 Gửi event mail tổng quát (dùng cho mọi loại email)
+   * Gửi event mail tổng quát (dùng cho mọi loại email)
    */
   async sendMailEvent(data) {
     if (!data.to) {
-      console.error("[Kafka] ❌ Không có người nhận email (to) trong payload:", data);
+      console.error("[Kafka] Không có người nhận email (to) trong payload:", data);
       return;
     }
 
@@ -26,7 +26,7 @@ class MailProducer {
   }
 
   /**
-   * 🎉 Gửi email chào mừng khi user mới đăng ký
+   * Gửi email chào mừng khi user mới đăng ký
    */
   async sendWelcomeEmail(user) {
     const event = {
