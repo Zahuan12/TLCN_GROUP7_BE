@@ -32,8 +32,9 @@ class UserService {
     }
     if (role === 'COMPANY') {
       await db.Company.create({
-        companyId: user.id,
-        companyName: "unkown",
+        userId: user.id,
+        companyId: null,
+        companyName:"unknown",
         industry: null,
         website: null,
         description: null
