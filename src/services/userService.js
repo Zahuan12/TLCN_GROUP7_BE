@@ -20,21 +20,18 @@ class UserService {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-      // ✅ Thêm bản ghi student trống (chỉ cần userId, các trường khác có thể null)
+      // ✅ Thêm bản ghi student với studentId là user.id (vì nó là primary key)
     if (role === 'STUDENT') {
       await db.Student.create({
-        studentId: user.id,
-        university: null,
+        studentId: user.id, // studentId là primary key, dùng user.id
         major: null,
-        graduationYear: null,
-        careerInterest: null
+        school: null
       });
     }
     if (role === 'COMPANY') {
       await db.Company.create({
-        userId: user.id,
-        companyId: null,
-        companyName:"unknown",
+        companyId: user.id, // companyId là primary key, dùng user.id
+        companyName: "unknown",
         industry: null,
         website: null,
         description: null

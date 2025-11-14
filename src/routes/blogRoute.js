@@ -3,15 +3,18 @@ const router = express.Router();
 const blogController = require('../controllers/blogController');
 const AuthMiddleware = require('../middlewares/AuthMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
+const RoleMiddleware = require('../middlewares/RoleMiddleware');
 
-// Define blog routes here (e.g., create, read, update, delete blogs)
-// áp dụng xác thực cho toàn bộ route.
-router.use(AuthMiddleware.verifyToken); 
-
+// Public routes (no authentication required)
 router.get('/', blogController.getAll);
 router.get('/:id', blogController.getById);
-router.post('/', upload, blogController.create); // upload handles images/files
+
+// Protected routes (authentication + COMPANY role required)
+router.use(AuthMiddleware.verifyToken);
+router.use(RoleMiddleware.checkRole("COMPANY"));
+
+router.post('/', upload, blogController.create);
 router.put('/:id', upload, blogController.update);
 router.delete('/:id', blogController.delete);
 
-module.exports = router 
+module.exports = router
