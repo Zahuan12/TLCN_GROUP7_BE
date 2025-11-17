@@ -1,27 +1,55 @@
+// kafka/consumers/mailConsumer.js
 const mailService = require('../../services/mailService');
+
 class MailConsumer {
   constructor(kafka) {
     this.kafka = kafka;
     this.consumer = this.kafka.consumer({ groupId: "mail-group" });
+    this.topic = process.env.KAFKA_MAIL_TOPIC || "mail-events";
   }
 
   async start() {
     await this.consumer.connect();
-    await this.consumer.subscribe({ topic: "mail-events", fromBeginning: true });
+    await this.consumer.subscribe({ topic: this.topic, fromBeginning: false });
 
     await this.consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
+      eachMessage: async ({ message }) => {
         const data = JSON.parse(message.value.toString());
         console.log("[Kafka] Received mail event:", data);
+
         try {
-          await mailService.sendWelcomeEmail({
-            email: data.to,              // lấy từ event Kafka
-            fullName: data.fullName,     // hoặc username, tùy bạn gửi từ Producer
-            username: data.username
-          });
-          console.log("[MailConsumer] Email đã được gửi tới:", data.to);
+          switch ((data.type || '').toUpperCase()) {
+            case 'WELCOME':
+              // delegate to service that actually sends email
+              await mailService.sendWelcomeEmail({
+                email: data.to,
+                fullName: data.fullName,
+                username: data.username
+              });
+              break;
+
+            case 'OTP':
+              await mailService.sendOTPEmail({
+                email: data.to,
+                fullName: data.fullName,
+                username: data.username,
+                otpCode: data.otpCode
+              });
+              break;
+
+            default:
+              // generic mail: mailService có method gửi mail chung
+              if (mailService.sendGenericMail) {
+                await mailService.sendGenericMail(data);
+              } else {
+                console.warn("[MailConsumer] Unhandled mail event type:", data.type);
+              }
+              break;
+          }
+
+          console.log("[MailConsumer] Processed mail event for:", data.to);
         } catch (err) {
-          console.error("[MailConsumer] Lỗi khi gửi email:", err.message);
+          console.error("[MailConsumer] Error handling mail event:", err);
         }
       },
     });

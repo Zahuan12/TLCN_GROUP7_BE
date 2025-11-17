@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     studentId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'students', key: 'userId' }, // 👈 đổi lại ở đây
+      references: { model: 'students', key: 'userId' }, 
       onDelete: 'CASCADE'
     }
   }, {
@@ -20,8 +20,17 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   StudentTestResult.associate = (models) => {
-    StudentTestResult.belongsTo(models.Student, { foreignKey: 'studentId', as: 'student' });
-  };
+  StudentTestResult.belongsTo(models.Student, {
+    foreignKey: 'studentId',
+    as: 'student'
+  });
+
+  StudentTestResult.belongsTo(models.Test, {
+    foreignKey: 'testId',
+    as: 'test'
+  });
+};
+
 
   return StudentTestResult;
 };

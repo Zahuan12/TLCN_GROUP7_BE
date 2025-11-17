@@ -6,6 +6,13 @@ const RoleMiddleware = require('../middlewares/RoleMiddleware');
 
 // Áp dụng xác thực cho tất cả các route bên dưới
 router.use(AuthMiddleware.verifyToken);
-router.use(RoleMiddleware.checkRole("STUDENT"));
+router.use(RoleMiddleware.checkRole(["STUDENT"]));
+router.post("/join", studentController.joinCareerPath);
+
+// HS nộp bài test
+router.post("/submit-test", studentController.submitTest);
+
+// Lấy tiến độ theo CareerPath
+router.get("/progress/:careerPathId", studentController.getCareerPathProgress);
 
 module.exports = router;

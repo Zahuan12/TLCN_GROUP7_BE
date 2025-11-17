@@ -3,7 +3,6 @@ const kafkaModule = require("../kafka");
 const bcrypt = require('bcryptjs');
 
 class UserService {
-  // ---------------- CREATE USER ----------------
   async createUser(data) {
     const { email, username, fullName, role, password, provider = 'LOCAL', providerId } = data;
 
@@ -49,11 +48,13 @@ class UserService {
     });
 
     // Gửi email Kafka
-    await kafkaModule.producers.mailProducer.sendMailEvent({
-      to: user.email,
-      subject: "Welcome!",
-      text: `Chào mừng ${user.username}!`,
+    
+    await kafkaModule.producers.mailProducer.sendWelcomeEmail({
+      email: user.email,
+      fullName: user.fullName,
+      username: user.username
     });
+
 
     return user;
   }

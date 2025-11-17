@@ -1,6 +1,8 @@
+// kafka/producers/mailProducer.js
 class MailProducer {
   constructor(kafka) {
     this.producer = kafka.producer();
+    this.topic = process.env.KAFKA_MAIL_TOPIC || "mail-events";
   }
 
   async connect() {
@@ -8,49 +10,47 @@ class MailProducer {
     console.log("[Kafka] MailProducer connected");
   }
 
-  /**
-   * Gửi event mail tổng quát (dùng cho mọi loại email)
-   */
+  // Low-level: gửi bất kỳ event mail nào
   async sendMailEvent(data) {
-    if (!data.to) {
-      console.error("[Kafka] Không có người nhận email (to) trong payload:", data);
+    if (!data || !data.to) {
+      console.error("[Kafka] Missing 'to' in mail event:", data);
       return;
     }
 
     await this.producer.send({
-      topic: "mail-events",
+      topic: this.topic,
       messages: [{ value: JSON.stringify(data) }],
     });
 
     console.log(`[Kafka] Mail event sent to ${data.to} (${data.type || "general"})`);
   }
 
-  /**
-   * Gửi email chào mừng khi user mới đăng ký
-   */
-  async sendWelcomeEmail(user) {
+  // Helper cao cấp: gửi event Welcome (dùng trong service)
+  async sendWelcomeEmail({ email, fullName, username }) {
     const event = {
       type: "WELCOME",
-      to: user.email,
-      fullName: user.fullName,
-      username: user.username,
+      to: email,
+      fullName,
+      username
     };
-
     await this.sendMailEvent(event);
   }
 
-  /**
-   * 🔐 Gửi email chứa mã OTP (quên mật khẩu, xác thực, v.v.)
-   */
-  async sendOTPEmail(user, otpCode) {
+  // Helper cao cấp: gửi OTP event
+  async sendOTPEmail({ email, fullName, username, otpCode }) {
     const event = {
       type: "OTP",
-      to: user.email,
-      fullName: user.fullName,
-      username: user.username,
-      otpCode,
+      to: email,
+      fullName,
+      username,
+      otpCode
     };
+    await this.sendMailEvent(event);
+  }
 
+  // (tùy chọn) helper generic cho template khác
+  async sendTemplateMail({ type, to, payload }) {
+    const event = { type, to, ...payload };
     await this.sendMailEvent(event);
   }
 }
