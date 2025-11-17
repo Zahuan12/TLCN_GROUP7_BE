@@ -2,28 +2,32 @@ const db = require('../models');
 const { Test, Lesson, CareerPath } = db;
 
 class TestService {
-  async create(companyId, data) {
+  // ---------------- CREATE TEST ----------------
+  async create(data) {
     const { title, description, type, content, maxScore, lessonId, careerPathId } = data;
 
-    // Kiểm tra logic ràng buộc
+    // Validate logic
     if (type === 'MINI' && !lessonId) {
       throw new Error('Bài test MINI phải thuộc về một Lesson.');
     }
+
     if (type === 'FINAL_PATH' && !careerPathId) {
       throw new Error('Bài test FINAL_PATH phải thuộc về một CareerPath.');
     }
 
-    // Kiểm tra Lesson hoặc CareerPath có tồn tại không
+    // Kiểm tra tồn tại Lesson
     if (lessonId) {
       const lesson = await Lesson.findByPk(lessonId);
       if (!lesson) throw new Error('Lesson không tồn tại.');
     }
+
+    // Kiểm tra tồn tại CareerPath
     if (careerPathId) {
       const careerPath = await CareerPath.findByPk(careerPathId);
       if (!careerPath) throw new Error('CareerPath không tồn tại.');
     }
 
-    const test = await Test.create({
+    return Test.create({
       title,
       description,
       type,
@@ -32,12 +36,12 @@ class TestService {
       lessonId: lessonId || null,
       careerPathId: careerPathId || null
     });
-
-    return test;
   }
 
-  async getAll(page, limit) {
+  // ---------------- GET ALL TESTS ----------------
+  async getAll(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
+
     const { count, rows } = await Test.findAndCountAll({
       offset,
       limit,
@@ -56,6 +60,7 @@ class TestService {
     };
   }
 
+  // ---------------- GET TEST BY ID ----------------
   async getById(id) {
     const test = await Test.findByPk(id, {
       include: [
@@ -68,18 +73,32 @@ class TestService {
     return test;
   }
 
-  async update(companyId, id, data) {
+  // ---------------- UPDATE TEST ----------------
+  async update(id, data) {
     const test = await Test.findByPk(id);
     if (!test) throw new Error('Bài test không tồn tại.');
 
     const { title, description, type, content, maxScore, lessonId, careerPathId } = data;
 
-    // Kiểm tra lại tính hợp lệ
+    // Validate loại test
     if (type === 'MINI' && !lessonId) {
       throw new Error('Bài test MINI phải thuộc về một Lesson.');
     }
+
     if (type === 'FINAL_PATH' && !careerPathId) {
       throw new Error('Bài test FINAL_PATH phải thuộc về một CareerPath.');
+    }
+
+    // Validate lesson
+    if (lessonId) {
+      const lesson = await Lesson.findByPk(lessonId);
+      if (!lesson) throw new Error('Lesson không tồn tại.');
+    }
+
+    // Validate careerPath
+    if (careerPathId) {
+      const careerPath = await CareerPath.findByPk(careerPathId);
+      if (!careerPath) throw new Error('CareerPath không tồn tại.');
     }
 
     await test.update({
@@ -95,7 +114,8 @@ class TestService {
     return test;
   }
 
-  async delete(companyId, id) {
+  // ---------------- DELETE TEST ----------------
+  async delete(id) {
     const test = await Test.findByPk(id);
     if (!test) throw new Error('Bài test không tồn tại.');
 

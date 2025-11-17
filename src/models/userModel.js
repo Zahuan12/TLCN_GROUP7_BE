@@ -13,28 +13,36 @@ module.exports = (sequelize, DataTypes) => {
     username: { 
       type: DataTypes.STRING, 
       unique: true, 
-      allowNull: true   // Cho phép null cho user Google
+      allowNull: true
     },
-    fullName: { 
-      type: DataTypes.STRING 
+    fullName: DataTypes.STRING,
+
+    avatar: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
     },
-    address: {                     // 👈 Thêm trường địa chỉ
-      type: DataTypes.STRING(255), // đủ dài cho tên đường, phường, quận
-      allowNull: true              // không bắt buộc
+
+    address: {
+      type: DataTypes.STRING(255),
+      allowNull: true
     },
+
     role: { 
-      type: DataTypes.ENUM('STUDENT', 'COMPANY', 'ADMIN'), 
+      type: DataTypes.ENUM('STUDENT', 'COMPANY', 'ADMIN'),
       allowNull: true 
     },
+
     isActive: { 
       type: DataTypes.BOOLEAN, 
       defaultValue: true 
     },
+
     verifyStatus: {
       type: DataTypes.ENUM('INVALID', 'UNVERIFIED', 'VERIFIED'),
       defaultValue: 'UNVERIFIED',
       allowNull: false
     },
+
     createdDate: { 
       type: DataTypes.DATE, 
       defaultValue: DataTypes.NOW 
@@ -48,8 +56,17 @@ module.exports = (sequelize, DataTypes) => {
   User.associate = (models) => {
     User.hasMany(models.AuthProvider, { foreignKey: 'userId' });
     User.hasMany(models.RefreshToken, { foreignKey: 'userId' });
-    User.hasOne(models.Student, { foreignKey: 'userId' });
-    User.hasOne(models.Company, { foreignKey: 'userId' });
+
+    // 💡 Quan trọng: thêm alias để tránh lỗi include
+    User.hasOne(models.Student, { 
+      foreignKey: 'userId',
+      as: 'student'
+    });
+
+    User.hasOne(models.Company, { 
+      foreignKey: 'userId',
+      as: 'company'
+    });
   };
 
   return User;

@@ -5,7 +5,10 @@ const careerTestRouter = require('./careerTestRoutes')
 const studentRouter = require('./studentRoute')    
 const commentRouter = require('./commentRoute');
 const likeRouter = require('./likeRoute');
+const careerPathRouter = require('./careerPathRoute');
+const lessonRouter = require('./lessonRoute');
 const testRouter = require('./testRoute');
+
 function route(app) {
     app.use("/auth",authRouter)
     app.use("/users",userRouter)
@@ -14,7 +17,9 @@ function route(app) {
     app.use("/students", studentRouter)
     app.use("/comments", commentRouter)
     app.use("/likes", likeRouter);
-    app.use("/students", studentRouter)   
+    app.use("/students", studentRouter)  
+    app.use("/career-paths", careerPathRouter); 
+    app.use("/lessons", lessonRouter);
     app.use("/tests", testRouter);
 }
 

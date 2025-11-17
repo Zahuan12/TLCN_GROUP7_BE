@@ -1,24 +1,36 @@
 module.exports = (sequelize, DataTypes) => {
-  const Student = sequelize.define('Student', {
-    studentId: {
+  const Student = sequelize.define("Student", {
+    id: {
       type: DataTypes.UUID,
-      primaryKey: true, // dùng làm khóa chính luôn
-      references: { model: 'users', key: 'id' },
-      onDelete: 'CASCADE'
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
     },
-    major: { type: DataTypes.STRING },
-    school: { type: DataTypes.STRING },
-    // các thông tin khác của sinh viên
+
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: { model: "users", key: "id" },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE"
+    },
+
+    major: DataTypes.STRING,
+    school: DataTypes.STRING
   }, {
-    tableName: 'students',
+    tableName: "students",
     timestamps: true
   });
 
   Student.associate = (models) => {
-    Student.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+    Student.belongsTo(models.User, {
+      foreignKey: "userId",
+      as: "user"
+    });
 
-    // các mối quan hệ khác
-    Student.hasMany(models.StudentTestResult, { foreignKey: 'studentId', as: 'testResults' });
+    Student.hasMany(models.StudentTestResult, {
+      foreignKey: "studentId",
+      as: "testResults"
+    });
   };
 
   return Student;

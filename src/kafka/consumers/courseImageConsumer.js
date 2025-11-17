@@ -1,4 +1,4 @@
-const CareerPathService = require("../../services/careerPathService");
+const CourseImageHandler = require("../../handles/courseImageHandler");
 
 class CourseImageConsumer {
   constructor(kafka) {
@@ -14,18 +14,15 @@ class CourseImageConsumer {
     await this.consumer.run({
       eachMessage: async ({ message }) => {
         const data = JSON.parse(message.value.toString());
-        console.log("[Kafka] Received course image event:", data.courseId);
+        console.log("[Kafka] Received course image event:", data.courseId, data.type);
 
         try {
-          await CareerPathService.uploadAndUpdateCourseImage(
-            data.courseId,
-            data.bufferBase64
-          );
+          // Chỉ gọi handler, tất cả logic xử lý ảnh và DB nằm trong handler
+          await CourseImageHandler.handleCourseImage(data);
         } catch (err) {
-          console.error("[CourseImageConsumer] Upload error:", err.message);
-          // Nếu cần retry, có thể implement logic retry tại đây
+          console.error("[CourseImageConsumer] Error:", err.message);
         }
-      },
+      }
     });
 
     console.log("[Kafka] CourseImageConsumer started and listening...");

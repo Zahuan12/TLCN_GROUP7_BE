@@ -10,17 +10,18 @@ class CourseImageProducer {
   }
 
   async sendUploadEvent(data) {
-    if (!data.courseId || !data.bufferBase64) {
-      console.error("[Kafka] Missing courseId or bufferBase64:", data);
+    // data phải có courseId và type
+    if (!data.courseId || !data.type) {
+      console.error("[Kafka] Missing courseId or type:", data);
       return;
     }
 
     await this.producer.send({
       topic: this.topic,
-      messages: [{ key: data.courseId, value: JSON.stringify(data) }],
+      messages: [{ key: data.courseId.toString(), value: JSON.stringify(data) }]
     });
 
-    console.log(`[Kafka] Course image upload event sent for ${data.courseId}`);
+    console.log(`[Kafka] Course image event sent for courseId ${data.courseId}, type: ${data.type}`);
   }
 }
 

@@ -135,25 +135,42 @@ class BlogService {
 
   // Xóa blog
   async deleteBlog(userId, role, blogId) {
-  const blog = await db.Blog.findByPk(blogId);
-  if (!blog) {
-    const error = new Error('Blog không tồn tại');
-    error.statusCode = 404;
-    throw error;
+    const blog = await db.Blog.findByPk(blogId, {
+      include: [{ model: db.BlogMedia, as: 'media' }]
+    });
+
+    if (!blog) {
+      const error = new Error('Blog không tồn tại');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isAdmin = role === 'ADMIN';
+    if (!isAdmin && blog.authorId !== userId) {
+      const error = new Error('Không có quyền xóa');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    // Xóa media nếu có
+    if (blog.media && blog.media.length) {
+      for (const m of blog.media) {
+        if (m.publicId) {
+          try {
+            await cloudinary.uploader.destroy(m.publicId);
+          } catch (err) {
+            console.error(`[BlogService] Xóa media lỗi: ${m.id}`, err.message);
+          }
+        }
+      }
+
+      // Xóa record media
+      await db.BlogMedia.destroy({ where: { blogId } });
+    }
+
+    // Xóa blog
+    await blog.destroy();
   }
-
-  // Admin có quyền xóa tất cả
-  const isAdmin = role === 'ADMIN';
-
-  // User thường chỉ được xóa blog của chính họ
-  if (!isAdmin && blog.authorId !== userId) {
-    const error = new Error('Không có quyền xóa');
-    error.statusCode = 403;
-    throw error;
-  }
-
-  await blog.destroy();
-}
 
 }
 

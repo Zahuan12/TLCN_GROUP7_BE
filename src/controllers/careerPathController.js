@@ -1,59 +1,42 @@
 const CareerPathService = require('../services/careerPathService');
-const { courseImageProducer } = require('../kafka/producers');
 const ApiResponse = require('../utils/ApiResponse');
 
 class CareerPathController {
 
-  // Tạo course
   async create(req, res) {
     try {
-      const companyId = req.user.companyId;
-      const data = req.body;
-      const file = req.file;
+      const companyId = req.user.id;
+      const data = { ...req.body };
 
-      //  Tạo course (chỉ DB)
-      const course = await CareerPathService.createCourse(companyId, data);
-
-      //  Nếu có file → gửi event Kafka
-      if (file) {
-        await courseImageProducer.sendUploadEvent({
-          courseId: course.id,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          size: file.size,
-          bufferBase64: file.buffer.toString("base64"),
-        });
+      if (req.file) {
+        data.fileBase64 = req.file.buffer.toString("base64");
+        data.originalName = req.file.originalname;
+        data.mimeType = req.file.mimetype;
+        data.size = req.file.size;
       }
 
+      const course = await CareerPathService.createCourse(companyId, data);
       return ApiResponse.success(res, 'Tạo course thành công', course, 201);
     } catch (error) {
-      console.error('[CareerPathController.create] ', error);
+      console.error('[CareerPathController.create]', error);
       return ApiResponse.error(res, error.message || 'Lỗi tạo course', 400);
     }
   }
 
-  // Cập nhật course
   async update(req, res) {
     try {
-      const companyId = req.user.companyId;
+      const companyId = req.user.id;
       const courseId = req.params.id;
-      const data = req.body;
-      const file = req.file;
+      const data = { ...req.body };
 
-      // 1️⃣ Cập nhật DB (title, description)
-      const course = await CareerPathService.updateCourse(companyId, courseId, data);
-
-      // 2️⃣ Nếu có file → gửi event Kafka để consumer upload ảnh
-      if (file) {
-        await courseImageProducer.sendUploadEvent({
-          courseId: course.id,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          size: file.size,
-          bufferBase64: file.buffer.toString("base64"),
-        });
+      if (req.file) {
+        data.fileBase64 = req.file.buffer.toString("base64");
+        data.originalName = req.file.originalname;
+        data.mimeType = req.file.mimetype;
+        data.size = req.file.size;
       }
 
+      const course = await CareerPathService.updateCourse(companyId, courseId, data);
       return ApiResponse.success(res, 'Cập nhật course thành công', course);
     } catch (error) {
       console.error('[CareerPathController.update]', error);
@@ -69,7 +52,7 @@ class CareerPathController {
       const result = await CareerPathService.getAllCourses(page, limit);
       return ApiResponse.success(res, 'Lấy danh sách course thành công', result);
     } catch (error) {
-      console.error('[CareerPathController.getAll] ', error);
+      console.error('[CareerPathController.getAll]', error);
       return ApiResponse.error(res, error.message || 'Lỗi server', 500);
     }
   }
@@ -80,20 +63,20 @@ class CareerPathController {
       const result = await CareerPathService.getCourseById(courseId);
       return ApiResponse.success(res, 'Lấy course thành công', result);
     } catch (error) {
-      console.error('[CareerPathController.getById] ', error);
+      console.error('[CareerPathController.getById]', error);
       return ApiResponse.error(res, error.message || 'Không tìm thấy course', 404);
     }
   }
 
   async delete(req, res) {
     try {
-      const companyId = req.user.companyId;
+      const companyId = req.user.id;
       const courseId = req.params.id;
-
-      await CareerPathService.deleteCourse(companyId, courseId);
+      const role = req.user.role;
+      await CareerPathService.deleteCourse(companyId, courseId, role);
       return ApiResponse.success(res, 'Xoá course thành công');
     } catch (error) {
-      console.error('[CareerPathController.delete] ', error);
+      console.error('[CareerPathController.delete]', error);
       return ApiResponse.error(res, error.message || 'Không tìm thấy course', 404);
     }
   }

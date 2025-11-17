@@ -1,25 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const CareerPathController = require("../controllers/careerPathContoller");
+const CareerPathController = require("../controllers/careerPathController");
 const AuthMiddleware = require('../middlewares/AuthMiddleware');
 const RoleMiddleware = require('../middlewares/RoleMiddleware');
 
-// Tất cả route dưới đây yêu cầu người dùng phải đăng nhập
-router.use(AuthMiddleware.verifyToken);
-router.use(RoleMiddleware.checkRole("COMPANY"));
-
-// Tạo course mới
-router.post("/", CareerPathController.create);
-
-// Lấy danh sách course
+// Public: lấy danh sách & chi tiết course (không yêu cầu login)
 router.get("/", CareerPathController.getAll);
-
-// Lấy course theo id
 router.get("/:id", CareerPathController.getById);
 
-// Cập nhật course
-router.put("/:id", CareerPathController.update);
+// Private: cần login
+router.use(AuthMiddleware.verifyToken);
 
-// Xoá course
+// Chỉ COMPANY & ADMIN được tạo, sửa, xóa
+router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
+
+router.post("/", CareerPathController.create);
+router.put("/:id", CareerPathController.update);
 router.delete("/:id", CareerPathController.delete);
-module.exports = router;    
+
+module.exports = router;

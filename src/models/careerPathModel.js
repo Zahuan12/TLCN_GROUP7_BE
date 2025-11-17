@@ -7,15 +7,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     title: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT },
-    image: { 
-      type: DataTypes.STRING, // URL lưu trên Cloudinary
-      allowNull: true 
-    },
+    image: { type: DataTypes.STRING, allowNull: true },
     companyId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'companies', key: 'companyId' },
-      onDelete: 'CASCADE'
+      references: { model: 'companies', key: 'id' }, // ✔ FIXED
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     }
   }, {
     tableName: 'career_paths',

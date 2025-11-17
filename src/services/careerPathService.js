@@ -1,126 +1,105 @@
-const db = require("../models");
-const cloudinary = require("../configs/cloudinary");
-
 class CareerPathService {
 
   // Tạo course
-  async createCourse(companyId, data, file) {
+  async createCourse(companyId, data) {
     if (!data.title) throw new Error("Course cần có tiêu đề");
 
-    const t = await db.sequelize.transaction();
-    try {
-      const course = await db.CareerPath.create({
-        title: data.title,
-        description: data.description || null,
-        companyId,
-        image: null,
-        publicId: null
-      }, { transaction: t });
+    // Tạo course
+    const course = await db.CareerPath.create({
+      title: data.title,
+      description: data.description || null,
+      companyId,
+      image: null,
+      publicId: null
+    });
 
-      await t.commit();
-      return course;
-    } catch (err) {
-      await t.rollback();
-      throw err;
+    // Xử lý file upload nếu có
+    if (data.fileBase64) {
+      try {
+        await courseImageProducer.sendUploadEvent({
+          courseId: course.id,
+          bufferBase64: data.fileBase64,
+          originalName: data.originalName,
+          mimeType: data.mimeType,
+          size: data.size,
+          type: "CREATE"
+        });
+      } catch (error) {
+        console.error("Lỗi upload ảnh: ", error);
+        // Có thể tùy chỉnh thông báo lỗi ở đây nếu cần
+        throw new Error("Lỗi upload ảnh course");
+      }
     }
+
+    return course;
   }
 
-  // Update course
+  // Cập nhật course
   async updateCourse(companyId, courseId, data) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
     if (course.companyId !== companyId) throw new Error("Không có quyền chỉnh sửa");
 
-    const t = await db.sequelize.transaction();
-    try {
-      await course.update({
-        title: data.title ?? course.title,
-        description: data.description ?? course.description
-      }, { transaction: t });
+    // Cập nhật thông tin
+    await course.update({
+      title: data.title ?? course.title,
+      description: data.description ?? course.description
+    });
 
-      await t.commit();
-      return course;
-    } catch (err) {
-      await t.rollback();
-      throw err;
-    }
-  }
-
-  // Upload hoặc update ảnh
-  async uploadAndUpdateCourseImage(courseId, bufferBase64) {
-    const course = await db.CareerPath.findByPk(courseId);
-    if (!course) throw new Error("Course không tồn tại");
-
-    try {
-      // Xóa ảnh cũ nếu có
-      if (course.publicId) {
-        await cloudinary.uploader.destroy(course.publicId);
+    // Xử lý file upload nếu có
+    if (data.fileBase64) {
+      try {
+        await courseImageProducer.sendUploadEvent({
+          courseId: course.id,
+          bufferBase64: data.fileBase64,
+          originalName: data.originalName,
+          mimeType: data.mimeType,
+          size: data.size,
+          type: "UPDATE",
+          oldPublicId: course.publicId
+        });
+      } catch (error) {
+        console.error("Lỗi upload ảnh: ", error);
+        // Có thể tùy chỉnh thông báo lỗi ở đây nếu cần
+        throw new Error("Lỗi upload ảnh course");
       }
-
-      // Upload ảnh mới
-      const buffer = Buffer.from(bufferBase64, "base64");
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "courses", resource_type: "image" },
-          (err, result) => (err ? reject(err) : resolve(result))
-        );
-        stream.end(buffer);
-      });
-
-      await course.update({
-        image: uploadResult.secure_url,
-        publicId: uploadResult.public_id
-      });
-
-      console.log(`[CareerPathService] Uploaded course image ${courseId}`);
-      return uploadResult.secure_url;
-    } catch (err) {
-      console.error(`[CareerPathService] Upload failed ${courseId}:`, err.message);
-      await course.update({ image: null, publicId: null });
-      throw err;
     }
-  }
 
-  // Lấy tất cả courses
-  async getAllCourses(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    const { count, rows } = await db.CareerPath.findAndCountAll({
-      offset,
-      limit,
-      order: [["createdAt", "DESC"]],
-    });
-    return {
-      total: count,
-      courses: rows,
-      currentPage: page,
-      totalPages: Math.ceil(count / limit),
-    };
-  }
-
-  // Lấy course theo ID
-  async getCourseById(courseId) {
-    const course = await db.CareerPath.findByPk(courseId, {
-      include: [
-        { model: db.Lesson, as: "Lessons" },
-        { model: db.Test, as: "Tests" }
-      ]
-    });
-    if (!course) throw new Error("Không tìm thấy course");
     return course;
   }
 
   // Xóa course
-  async deleteCourse(companyId, courseId) {
+  async deleteCourse(companyId, courseId, role) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
-    if (course.companyId !== companyId) throw new Error("Không có quyền xoá");
 
-    if (course.publicId) {
-      await cloudinary.uploader.destroy(course.publicId);
+    if (role === "COMPANY" && course.companyId !== companyId) {
+      throw new Error("Không có quyền xoá");
     }
 
-    await db.CareerPath.destroy({ where: { id: courseId } });
+    if (role !== "ADMIN" && role !== "COMPANY") {
+      throw new Error("Bạn không có quyền xoá course");
+    }
+
+    // Gửi event xóa ảnh
+    if (course.publicId) {
+      try {
+        await courseImageProducer.sendUploadEvent({
+          courseId: course.id,
+          type: "DELETE",
+          oldPublicId: course.publicId
+        });
+      } catch (error) {
+        console.error("Lỗi xóa ảnh: ", error);
+        throw new Error("Lỗi xóa ảnh course");
+      }
+    }
+
+    // Xóa course
+    await db.CareerPath.destroy({ where: { id: course.id } });
+    return true;
   }
 }
+
 
 module.exports = new CareerPathService();

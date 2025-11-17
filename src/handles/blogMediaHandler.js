@@ -3,9 +3,6 @@ const cloudinary = require('../configs/cloudinary');
 
 class BlogMediaHandler {
 
-  /**
-   * Upload ảnh/video và cập nhật DB
-   */
   async uploadAndUpdate(blogMediaId, bufferBase64, type, blogId, removeOldPublicId = null) {
     try {
       // Xóa ảnh cũ nếu có

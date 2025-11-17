@@ -1,9 +1,9 @@
 const db = require('../models');
-// const MailService = require("./mailService");
 const kafkaModule = require("../kafka");
 const bcrypt = require('bcryptjs');
 
 class UserService {
+  // ---------------- CREATE USER ----------------
   async createUser(data) {
     const { email, username, fullName, role, password, provider = 'LOCAL', providerId } = data;
 
@@ -14,72 +14,89 @@ class UserService {
     // Tạo user
     const user = await db.User.create({ email, username, fullName, role });
 
-    // Nếu provider = LOCAL, hash password
+    // Hash password nếu LOCAL
     let hashedPassword = null;
     if (provider === 'LOCAL' && password) {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-      // Thêm bản ghi student trống (chỉ cần userId, các trường khác có thể null)
+    // Nếu là STUDENT → tạo bản ghi Student
     if (role === 'STUDENT') {
       await db.Student.create({
-        studentId: user.id, // studentId là primary key, dùng user.id
+        userId: user.id,
         major: null,
         school: null
       });
     }
+
+    // Nếu là COMPANY → tạo bản ghi Company
     if (role === 'COMPANY') {
       await db.Company.create({
-        companyId: user.id, // companyId là primary key, dùng user.id
-        companyName: "unknown",
+        userId: user.id,
+        companyName: "Unknown",
         industry: null,
         website: null,
         description: null
       });
     }
 
+    // Tạo AuthProvider
     await db.AuthProvider.create({
       userId: user.id,
       provider,
       providerId: provider === 'GOOGLE' ? providerId : null,
       password: hashedPassword
     });
+
+    // Gửi email Kafka
     await kafkaModule.producers.mailProducer.sendMailEvent({
       to: user.email,
       subject: "Welcome!",
       text: `Chào mừng ${user.username}!`,
     });
 
-
     return user;
   }
 
+  // ---------------- GET ALL USERS ----------------
   async getUsers() {
     return db.User.findAll({
-      include: [{ model: db.AuthProvider, attributes: ['provider', 'providerId'] }],
+      include: [
+        { model: db.AuthProvider, attributes: ['provider', 'providerId'] },
+        { model: db.Student, as: 'student' },
+        { model: db.Company, as: 'company' }
+      ],
       attributes: { exclude: ['deletedAt'] }
     });
   }
 
+  // ---------------- GET USER BY ID ----------------
   async getUserById(id) {
     const user = await db.User.findByPk(id, {
-      include: [{ model: db.AuthProvider, attributes: ['provider', 'providerId'] }]
+      include: [
+        { model: db.AuthProvider, attributes: ['provider', 'providerId'] },
+        { model: db.Student, as: 'student' },
+        { model: db.Company, as: 'company' }
+      ]
     });
+
     if (!user) throw new Error('Không tìm thấy user');
     return user;
   }
 
+  // ---------------- UPDATE USER ----------------
   async updateUser(id, data) {
     const user = await db.User.findByPk(id);
     if (!user) throw new Error('Không tìm thấy user');
 
     const { email, username, fullName, role, isActive } = data;
+
     await user.update({ email, username, fullName, role, isActive });
 
     return user;
   }
 
-
+  // ---------------- DELETE USER ----------------
   async deleteUser(id) {
     const user = await db.User.findByPk(id);
     if (!user) throw new Error('Không tìm thấy user');
@@ -88,46 +105,46 @@ class UserService {
     return true;
   }
 
+  // ---------------- UPDATE ROLE ----------------
   async updateUserRole(id, role) {
     const user = await db.User.findByPk(id);
     if (!user) throw new Error('Không tìm thấy user');
 
-    // Validate role
-    const validRoles = ['STUDENT', 'COMPANY', 'ADMIN'];
-    if (!validRoles.includes(role)) {
-      throw new Error('Vai trò không hợp lệ');
-    }
-
-    await user.update({ role });
-    return user;
-  }
-
-  async getAllUsers(role) {
-  const where = {};
-
-  // Nếu có truyền role → filter theo role
-  if (role) {
     const validRoles = ['STUDENT', 'COMPANY', 'ADMIN'];
     if (!validRoles.includes(role)) {
       const error = new Error('Vai trò không hợp lệ');
       error.statusCode = 400;
       throw error;
     }
-    where.role = role;
+
+    await user.update({ role });
+    return user;
   }
 
-  return db.User.findAll({
-    where,
-    include: [
-      {
-        model: db.AuthProvider,
-        attributes: ['provider', 'providerId']
-      }
-    ],
-    attributes: { exclude: ['deletedAt'] }
-  });
-}
+  // ---------------- FILTER BY ROLE ----------------
+  async getAllUsers(role) {
+    const where = {};
 
+    if (role) {
+      const validRoles = ['STUDENT', 'COMPANY', 'ADMIN'];
+      if (!validRoles.includes(role)) {
+        const error = new Error('Vai trò không hợp lệ');
+        error.statusCode = 400;
+        throw error;
+      }
+      where.role = role;
+    }
+
+    return db.User.findAll({
+      where,
+      include: [
+        { model: db.AuthProvider, attributes: ['provider', 'providerId'] },
+        { model: db.Student, as: 'student' },
+        { model: db.Company, as: 'company' }
+      ],
+      attributes: { exclude: ['deletedAt'] }
+    });
+  }
 }
 
 module.exports = new UserService();

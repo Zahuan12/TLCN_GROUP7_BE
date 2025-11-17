@@ -1,31 +1,48 @@
 module.exports = (sequelize, DataTypes) => {
-  const Company = sequelize.define('Company', {
-    companyId: {
+  const Company = sequelize.define("Company", {
+    id: {
       type: DataTypes.UUID,
-      primaryKey: true,
-      references: { model: 'users', key: 'id' },
-      onDelete: 'CASCADE'
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
     },
-    companyName: { 
-      type: DataTypes.STRING, 
-      allowNull: false 
+
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: { model: "users", key: "id" },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE"
     },
-    taxCode: {                      // 👈 Thêm trường mã số thuế
-      type: DataTypes.STRING(20),   // đủ cho mã số thuế VN (10–14 ký tự)
-      unique: true,                 // tránh trùng lặp giữa các công ty
-      allowNull: true               // cho phép null nếu chưa có
+
+    companyName: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
-    industry: { type: DataTypes.STRING },
-    website: { type: DataTypes.STRING },
-    description: { type: DataTypes.TEXT }
+
+    taxCode: {
+      type: DataTypes.STRING(20),
+      unique: true,
+      allowNull: true
+    },
+
+    industry: DataTypes.STRING,
+    website: DataTypes.STRING,
+    description: DataTypes.TEXT
   }, {
-    tableName: 'companies',
+    tableName: "companies",
     timestamps: true
   });
 
   Company.associate = (models) => {
-    Company.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
-    Company.hasMany(models.CareerPath, { foreignKey: 'companyId', as: 'careerPaths' });
+    Company.belongsTo(models.User, {
+      foreignKey: "userId",
+      as: "user"
+    });
+
+    Company.hasMany(models.CareerPath, {
+      foreignKey: "companyId",
+      as: "careerPaths"
+    });
   };
 
   return Company;
