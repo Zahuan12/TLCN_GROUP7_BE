@@ -7,7 +7,7 @@ class BlogService {
   async createBlog(authorId, data, files) {
     const { content, category } = data;
 
-    // 1️⃣ Tạo blog (status = hidden)
+    // Tạo blog (status = hidden)
     const newBlog = await db.Blog.create({
       content,
       category: category || null,
@@ -15,7 +15,7 @@ class BlogService {
       authorId
     });
 
-    // 2️⃣ Tạo record media (status = pending)
+    // Tạo record media (status = pending)
     const allFiles = [...(files?.images || []), ...(files?.files || [])];
     const mediaRecords = allFiles.map(f => ({
       blogId: newBlog.id,
@@ -31,7 +31,7 @@ class BlogService {
       ? await db.BlogMedia.bulkCreate(mediaRecords, { returning: true })
       : [];
 
-    // 3️⃣ Gửi event Kafka
+    // Gửi event Kafka
     for (let i = 0; i < createdMedia.length; i++) {
       const media = createdMedia[i];
       const file = allFiles[i];
@@ -46,7 +46,7 @@ class BlogService {
       });
     }
 
-    // 4️⃣ Trả về thông tin blog
+    // Trả về thông tin blog
     return await db.Blog.findByPk(newBlog.id, {
       include: [
         { model: db.BlogMedia, as: 'media' },
@@ -56,24 +56,32 @@ class BlogService {
   }
 
   // Lấy danh sách blog
-  async getAllBlogs(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-    const { count, rows } = await db.Blog.findAndCountAll({
-      offset,
-      limit,
-      order: [['createdAt', 'DESC']],
-      include: [
-        { model: db.BlogMedia, as: 'media' },
-        { model: db.User, as: 'author', attributes: ['id', 'username'] }
-      ]
-    });
-    return {
-      total: count,
-      blogs: rows,
-      currentPage: page,
-      totalPages: Math.ceil(count / limit)
-    };
-  }
+ async getAllBlogs(page = 1, limit = 10) {
+  const offset = (page - 1) * limit;
+
+  // 1. Query nhẹ chỉ để lấy count
+  const total = await db.Blog.count({
+    where: { deletedAt: null }
+  });
+
+  // 2. Query dữ liệu riêng
+  const blogs = await db.Blog.findAll({
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+    include: [
+      { model: db.BlogMedia, as: 'media' },
+      { model: db.User, as: 'author', attributes: ['id', 'username'] }
+    ]
+  });
+
+  return {
+    total,
+    blogs,
+    currentPage: page,
+    totalPages: Math.ceil(total / limit)
+  };
+}
 
   // Lấy blog theo ID
   async getBlogById(id) {
@@ -126,12 +134,27 @@ class BlogService {
   }
 
   // Xóa blog
-  async deleteBlog(authorId, blogId) {
-    const blog = await db.Blog.findByPk(blogId);
-    if (!blog) throw new Error('Blog không tồn tại');
-    if (blog.authorId !== authorId) throw new Error('Không có quyền xóa');
-    await db.Blog.destroy({ where: { id: blogId } });
+  async deleteBlog(userId, role, blogId) {
+  const blog = await db.Blog.findByPk(blogId);
+  if (!blog) {
+    const error = new Error('Blog không tồn tại');
+    error.statusCode = 404;
+    throw error;
   }
+
+  // Admin có quyền xóa tất cả
+  const isAdmin = role === 'ADMIN';
+
+  // User thường chỉ được xóa blog của chính họ
+  if (!isAdmin && blog.authorId !== userId) {
+    const error = new Error('Không có quyền xóa');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  await blog.destroy();
+}
+
 }
 
 module.exports = new BlogService();

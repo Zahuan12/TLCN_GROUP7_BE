@@ -59,6 +59,18 @@ class UserController {
       return ApiResponse.error(res, error.message, 500);
     }
   }
+async getAll(req, res) {
+  try {
+    const { role } = req.query; // STUDENT hoặc COMPANY hoặc null
+    const users = await UserService.getAllUsers(role);
+
+    return ApiResponse.success(res, 'Lấy danh sách user thành công', users);
+  } catch (error) {
+    return ApiResponse.error(res, error.message, error.statusCode || 400);
+  }
+}
+
+
 }
 
 module.exports = new UserController();

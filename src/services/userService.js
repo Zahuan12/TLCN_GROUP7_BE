@@ -20,7 +20,7 @@ class UserService {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-      // ✅ Thêm bản ghi student trống (chỉ cần userId, các trường khác có thể null)
+      // Thêm bản ghi student trống (chỉ cần userId, các trường khác có thể null)
     if (role === 'STUDENT') {
       await db.Student.create({
         studentId: user.id,
@@ -104,6 +104,33 @@ class UserService {
     await user.update({ role });
     return user;
   }
+
+  async getAllUsers(role) {
+  const where = {};
+
+  // Nếu có truyền role → filter theo role
+  if (role) {
+    const validRoles = ['STUDENT', 'COMPANY', 'ADMIN'];
+    if (!validRoles.includes(role)) {
+      const error = new Error('Vai trò không hợp lệ');
+      error.statusCode = 400;
+      throw error;
+    }
+    where.role = role;
+  }
+
+  return db.User.findAll({
+    where,
+    include: [
+      {
+        model: db.AuthProvider,
+        attributes: ['provider', 'providerId']
+      }
+    ],
+    attributes: { exclude: ['deletedAt'] }
+  });
+}
+
 }
 
 module.exports = new UserService();

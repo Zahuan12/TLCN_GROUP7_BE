@@ -10,12 +10,12 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT || 3306,
     dialect: "mysql",
-    logging: false,         // Bỏ log câu SQL nếu không cần
+    logging: false,         
     pool: {
-      max: 5,        // Số lượng connection tối đa trong pool
-      min: 0,        // Số lượng connection tối thiểu trong pool
-      acquire: 30000, // Thời gian (ms) tối đa Sequelize sẽ cố gắng lấy connection trước khi báo lỗi
-      idle: 10000     // Thời gian (ms) một connection có thể rảnh rỗi trước khi bị release
+      max: 5,       
+      min: 0,        
+      acquire: 30000, 
+      idle: 10000     
     }
   }
 );

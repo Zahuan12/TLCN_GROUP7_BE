@@ -55,19 +55,23 @@ class BlogController {
   }
 }
 
-
   async delete(req, res) {
     try {
-      const authorId = req.user.id;
+      const userId = req.user.id;
+      const userRole = req.user.role; // role có trong token
       const blogId = req.params.id;
 
-      await BlogService.deleteBlog(authorId, blogId);
+      await BlogService.deleteBlog(userId, userRole, blogId);
+
       return ApiResponse.success(res, 'Xóa blog thành công');
     } catch (error) {
       console.error('[BlogController.delete]', error);
-      return ApiResponse.error(res, error.message || 'Không tìm thấy', 404);
+      return ApiResponse.error(res, error.message || 'Lỗi hệ thống', error.statusCode || 400);
     }
   }
+
+ 
+  
 }
 
 module.exports = new BlogController();

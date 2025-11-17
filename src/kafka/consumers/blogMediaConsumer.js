@@ -1,4 +1,4 @@
-const BlogMediaHandler = require('../../services/blogMediaHandler');
+const BlogMediaHandler = require('../../handles/blogMediaHandler');
 
 class BlogMediaConsumer {
   constructor(kafka) {
