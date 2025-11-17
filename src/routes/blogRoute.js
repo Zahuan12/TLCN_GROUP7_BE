@@ -4,6 +4,7 @@ const blogController = require('../controllers/blogController');
 const AuthMiddleware = require('../middlewares/AuthMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
 const RoleMiddleware = require('../middlewares/RoleMiddleware');
+const RoleMiddleware = require('../middlewares/RoleMiddleware');
 
 // áp dụng xác thực cho toàn bộ route.
 router.use(AuthMiddleware.verifyToken); 
@@ -17,4 +18,4 @@ router.use(RoleMiddleware.checkRole(["ADMIN", "COMPANY"]));
 router.put('/:id', upload, blogController.update);
 router.delete('/:id', blogController.delete);
 
-module.exports = router 
+module.exports = router
