@@ -1,5 +1,6 @@
 const ApiResponse = require('../utils/ApiResponse');
 const studentService = require('../services/studentService');
+const UserService = require('../services/userService'); 
 class StudentController {
 
 
@@ -58,6 +59,38 @@ class StudentController {
     }
   }
   
+    async getProfile(req, res) {
+      try {
+        const userId = req.user.id;
+        const user = await UserService.getUserById(userId);
+        return ApiResponse.success(res, "Lấy hồ sơ sinh viên thành công", user);
+      } catch (error) {
+        console.error("[StudentController.getProfile]", error);
+        return ApiResponse.error(res, error.message || "Không lấy được hồ sơ", 400);
+      }
+    }
+    async updateProfile(req, res) {
+      try {
+        const userId = req.user.id;
+
+        const userPayload = {};
+        for (const key of ['email', 'username', 'fullName', 'isActive']) {
+          if (req.body[key] !== undefined) userPayload[key] = req.body[key];
+        }
+        if (Object.keys(userPayload).length > 0) {
+          await UserService.updateUser(userId, userPayload);
+        }
+
+        const { major, school } = req.body;
+        await studentService.updateProfile(userId, { major, school });
+
+        const updated = await UserService.getUserById(userId);
+        return ApiResponse.success(res, "Cập nhật hồ sơ sinh viên thành công", updated);
+      } catch (error) {
+        console.error("[StudentController.updateProfile]", error);
+        return ApiResponse.error(res, error.message || "Không cập nhật được hồ sơ", 400);
+      }
+    }
 }
 
 module.exports = new StudentController();

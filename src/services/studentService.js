@@ -106,5 +106,19 @@ async checkCareerPathCompletion(studentId, careerPathId) {
 }
 
    
+  async updateProfile(userId, data) {
+    const student = await db.Student.findOne({ where: { userId } });
+    if (!student) throw new Error("Student không tồn tại");
+
+    const updateData = {};
+    if (data.major !== undefined) updateData.major = data.major;
+    if (data.school !== undefined) updateData.school = data.school;
+
+    if (Object.keys(updateData).length > 0) {
+      await student.update(updateData);
+    }
+
+    return student;
+  }
 }
-module.exports = new StudentService();
+module.exports = new StudentService(); 
