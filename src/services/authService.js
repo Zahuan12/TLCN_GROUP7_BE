@@ -7,7 +7,7 @@ const OtpGenerator = require("../utils/otpGenerator");
 
 class AuthService {
   async login(username, password) {
-    // 1️⃣ Tìm user theo username và provider LOCAL
+    //  Tìm user theo username và provider LOCAL
     const user = await db.User.findOne({
       where: { username },
       include: [{ model: db.AuthProvider, where: { provider: 'LOCAL' } }]
@@ -18,15 +18,15 @@ class AuthService {
     const localProvider = user.AuthProviders[0];
     if (!localProvider.password) throw new Error('Tài khoản không có mật khẩu');
 
-    // 2️⃣ Kiểm tra mật khẩu
+    //  Kiểm tra mật khẩu
     const isMatch = await bcrypt.compare(password, localProvider.password);
     if (!isMatch) throw new Error('Sai mật khẩu');
 
-    // 3️⃣ Tạo access token & refresh token
+    //  Tạo access token & refresh token
     const accessToken = JwtUtils.signAccess({ id: user.id, role: user.role });
     const refreshToken = JwtUtils.signRefresh({ id: user.id });
 
-    // 4️⃣ Lưu refresh token vào DB (bảng RefreshToken)
+    //  Lưu refresh token vào DB (bảng RefreshToken)
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
     await db.RefreshToken.create({
       userId: user.id,
@@ -34,7 +34,7 @@ class AuthService {
       expiresAt
     });
 
-    // 5️⃣ Trả về user an toàn (ẩn password)
+    //  Trả về user an toàn (ẩn password)
     const safeUser = {
       id: user.id,
       fullName: user.fullName,
@@ -137,7 +137,7 @@ class AuthService {
 }
 
 async verifyUsername(username) {
-    // 1️⃣ Tìm user theo username
+    //  Tìm user theo username
     const user = await db.User.findOne({ where: { username } });
     if (!user) throw new Error('Người dùng không tồn tại');
     if (!user.isActive) throw new Error('Tài khoản đang bị khóa');
@@ -145,10 +145,10 @@ async verifyUsername(username) {
     // if (user.AuthProviders[0].provider !== 'LOCAL')
     //   throw new Error('Tài khoản không hỗ trợ đổi mật khẩu');
 
-    // 2️⃣ Tạo mã OTP ngẫu nhiên
+    // Tạo mã OTP ngẫu nhiên
     const otpCode = OtpGenerator.generate(6);
 
-    // 3️⃣ Lưu OTP vào bảng Otp (liên kết với user)
+    // Lưu OTP vào bảng Otp (liên kết với user)
     await db.Otp.create({
       userId: user.id,
       otp: otpCode,
@@ -157,10 +157,10 @@ async verifyUsername(username) {
       used: false,
     });
 
-    // 4️⃣ Gửi email OTP cho người dùng
+    // Gửi email OTP cho người dùng
     await mailService.sendOTPEmail(user, otpCode);
 
-    // 5️⃣ Trả dữ liệu cơ bản cho controller
+    // Trả dữ liệu cơ bản cho controller
     return {
       id: user.id,
       email: user.email,

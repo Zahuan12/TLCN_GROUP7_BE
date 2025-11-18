@@ -1,21 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const LessonController = require("../controllers/lessonController");
-const AuthMiddleware = require('../middlewares/AuthMiddleware');
-const RoleMiddleware = require('../middlewares/RoleMiddleware');
+const AuthMiddleware = require("../middlewares/AuthMiddleware");
+const RoleMiddleware = require("../middlewares/RoleMiddleware");
 
+// Public
+router.get("/:id", LessonController.getById); // chi tiết Lesson kèm mini test
 
-// PUBLIC
-router.get("/:careerPathId/lessons", LessonController.getAll);
-router.get("/lessons/:id", LessonController.getById);
-
-
-// AUTHORIZE
+// Protected routes
 router.use(AuthMiddleware.verifyToken);
 router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
 
-router.post("/:careerPathId/lessons", LessonController.create);
-router.put("/lessons/:id", LessonController.update);
-router.delete("/lessons/:id", LessonController.delete);
+router.put("/:id", LessonController.update);
+router.delete("/:id", LessonController.delete);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 const db = require("../models");
+const TestService = require("./testService");
 
 class LessonService {
-
 
   async createLesson(careerPathId, data) {
     if (!data.title) throw new Error("Lesson cần có tiêu đề");
@@ -13,7 +13,6 @@ class LessonService {
       careerPathId
     });
   }
-
 
   async updateLesson(lessonId, data) {
     const lesson = await db.Lesson.findByPk(lessonId);
@@ -28,37 +27,35 @@ class LessonService {
     return lesson;
   }
 
-
-  async getAllLessons(careerPathId) {
-    return await db.Lesson.findAll({
-      where: { careerPathId },
-      order: [["order", "ASC"]],
-    });
-  }
-
-
-  async getLessonById(lessonId) {
-    const lesson = await db.Lesson.findByPk(lessonId, {
-      include: [
-        {
-          model: db.Test,
-          as: "Tests",
-          where: { type: "MINI" },
-          required: false
-        }
-      ]
-    });
-
-    if (!lesson) throw new Error("Lesson không tồn tại");
-    return lesson;
-  }
-
   async deleteLesson(lessonId) {
     const lesson = await db.Lesson.findByPk(lessonId);
     if (!lesson) throw new Error("Lesson không tồn tại");
 
-    // MINI TEST sẽ tự xóa nhờ CASCADE (nếu migration đúng)
     await db.Lesson.destroy({ where: { id: lessonId } });
+    return true;
+  }
+
+  async getAllLessons(careerPathId) {
+    const lessons = await db.Lesson.findAll({
+      where: { careerPathId },
+      order: [["order", "ASC"]]
+    });
+
+    // Thêm miniTests cho mỗi lesson
+    for (let lesson of lessons) {
+      lesson.tests = await TestService.getTestsByLesson(lesson.id);
+    }
+
+    return lessons; // trả instance, có thêm field tests
+  }
+
+  async getLessonById(lessonId) {
+    const lesson = await db.Lesson.findByPk(lessonId);
+    if (!lesson) throw new Error("Lesson không tồn tại");
+
+    lesson.tests = await TestService.getTestsByLesson(lessonId);
+
+    return lesson; // trả instance, có thêm field tests
   }
 }
 
