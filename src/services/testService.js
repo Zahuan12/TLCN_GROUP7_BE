@@ -30,6 +30,19 @@ class TestService {
     });
   }
 
+  async getById(id) {
+    const test = await Test.findByPk(id, {
+      include: [
+        { model: Lesson, attributes: ["id", "title"] },
+        { model: CareerPath, attributes: ["id", "title"] }
+      ]
+    });
+
+    if (!test) throw new Error("Không tìm thấy bài test.");
+    return test;
+  }
+
+
   async update(id, data) {
     const test = await Test.findByPk(id);
     if (!test) throw new Error("Bài test không tồn tại");

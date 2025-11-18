@@ -6,9 +6,10 @@ const RoleMiddleware = require("../middlewares/RoleMiddleware");
 
 // CRUD test cho admin/company
 router.use(AuthMiddleware.verifyToken);
-router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
+router.get("/:id", TestController.getById);
 
-router.post("/", TestController.create);
+router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
+router.post("/", TestController.create);    
 router.put("/:id", TestController.update);
 router.delete("/:id", TestController.delete);
 

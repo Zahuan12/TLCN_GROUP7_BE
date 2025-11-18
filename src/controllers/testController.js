@@ -10,6 +10,16 @@ class TestController {
       return ApiResponse.error(res, err.message || "Lỗi tạo bài test", 400);
     }
   }
+  
+   async getById(req, res) {
+    try {
+      const testId = req.params.id;
+      const test = await TestService.getById(testId);
+      return ApiResponse.success(res, "Lấy bài test thành công", test);
+    } catch (error) {
+      return ApiResponse.error(res, error.message || "Không tìm thấy bài test", 404);
+    }
+  }
 
   async update(req, res) {
     try {
