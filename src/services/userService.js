@@ -59,17 +59,17 @@ class UserService {
     return user;
   }
 
-  // ---------------- GET ALL USERS ----------------
-  async getUsers() {
-    return db.User.findAll({
-      include: [
-        { model: db.AuthProvider, attributes: ['provider', 'providerId'] },
-        { model: db.Student, as: 'student' },
-        { model: db.Company, as: 'company' }
-      ],
-      attributes: { exclude: ['deletedAt'] }
-    });
-  }
+  // // ---------------- GET ALL USERS ----------------
+  // async getUsers() {
+  //   return db.User.findAll({
+  //     include: [
+  //       { model: db.AuthProvider, attributes: ['provider', 'providerId'] },
+  //       { model: db.Student, as: 'student' },
+  //       { model: db.Company, as: 'company' }
+  //     ],
+  //     attributes: { exclude: ['deletedAt'] }
+  //   });
+  // }
 
   // ---------------- GET USER BY ID ----------------
   async getUserById(id) {
@@ -136,13 +136,22 @@ class UserService {
       where.role = role;
     }
 
+    // Chuẩn bị include theo role
+    let include = [
+      { model: db.AuthProvider, attributes: ['provider', 'providerId'] }
+    ];
+
+    if (!role || role === 'STUDENT') {
+      include.push({ model: db.Student, as: 'student' });
+    }
+
+    if (!role || role === 'COMPANY') {
+      include.push({ model: db.Company, as: 'company' });
+    }
+
     return db.User.findAll({
       where,
-      include: [
-        { model: db.AuthProvider, attributes: ['provider', 'providerId'] },
-        { model: db.Student, as: 'student' },
-        { model: db.Company, as: 'company' }
-      ],
+      include,
       attributes: { exclude: ['deletedAt'] }
     });
   }
