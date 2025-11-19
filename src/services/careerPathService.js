@@ -7,12 +7,16 @@ class CareerPathService {
 
   async createCareerPath(companyId, data, files) {
 
+    const company = await db.Company.findOne({ where: { userId: companyId} });
+    if (!company) {
+      throw new Error('không tìm thấy công ty của bạn');
+}
     // Tạo CareerPath trước
     const careerPath = await db.CareerPath.create({
       title: data.title,
       description: data.description || null,
       category: data.category || null,
-      companyId,
+      companyId: company.id,
       image: null,
       publicId: null
     });

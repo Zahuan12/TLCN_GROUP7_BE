@@ -6,10 +6,10 @@ const ApiResponse = require("../utils/ApiResponse");
 class CareerPathController {
  async create(req, res) {
     try {
-      const companyId = req.user.companyId;
+      const companyId = req.user.id;
       const data = req.body;
       const files = req.files;
-
+      
       const result = await CareerPathService.createCareerPath(companyId, data, files);
 
       return ApiResponse.success(res, 'Tạo career path thành công', result, 201);
