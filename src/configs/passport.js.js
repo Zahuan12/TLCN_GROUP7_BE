@@ -11,6 +11,7 @@ passport.use(new GoogleStrategy({
       provider: 'GOOGLE',
       providerId: profile.id,
       email: profile.emails[0].value,
+      refreshToken: refreshToken,
       fullName: profile.displayName,
     };
 

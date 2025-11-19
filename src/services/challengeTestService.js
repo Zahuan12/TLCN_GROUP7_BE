@@ -1,136 +1,140 @@
-const db = require('../models');
-const kafkaModule = require('../kafka');
+// services/challengeTestService.js
+const kafkaModule = require("../kafka");
+const db = require("../models");
 
 class ChallengeTestService {
 
-  /** CREATE */
-  async create(companyId, data, files) {
-  const { title, description, deadline, maxScore } = data;
+  
+  async create(userId, data, files) {
 
-  const challenge = await db.ChallengeTest.create({
-    title,
-    description,
-    deadline,
-    maxScore,
-    companyId,
-    image: null,
-    fileUrl: null
-  });
+    const company = await db.Company.findOne({ where: { userId } });
+    if (!company) {
+      throw new Error('Không tìm thấy công ty của bạn');
+    }
 
-  const image = files?.image?.[0] || null;
-  const file = files?.file?.[0] || null;
-
-  // IMAGE
-  if (image) {
-    await kafkaModule.producers.challengeProducer.sendImageUploadEvent({
-      challengeTestId: challenge.id,
-      type: "CREATE_IMAGE",
-      bufferBase64: image.buffer.toString("base64"),
-      mimeType: image.mimetype
-    });
-  }
-
-  // FILE
-  if (file) {
-    await kafkaModule.producers.challengeProducer.sendFileUploadEvent({
-      challengeTestId: challenge.id,
-      type: "UPLOAD_FILE",
-      bufferBase64: file.buffer.toString("base64"),
-      mimeType: file.mimetype
-    });
-  }
-  return await db.ChallengeTest.findByPk(challenge.id);
-}
-
-  /** GET ALL */
-  async getAll(page = 1, limit = 10) {
-    const offset = (page - 1) * limit;
-
-    const total = await db.ChallengeTest.count();
-
-    const list = await db.ChallengeTest.findAll({
-      offset,
-      limit,
-      order: [['createdAt', 'DESC']],
-      include: [{ model: db.Company, attributes: ['id', 'name'] }]
+    const challenge = await db.ChallengeTest.create({
+      title: data.title,
+      description: data.description || null,
+      deadline: data.deadline ? new Date(data.deadline) : null,
+      maxScore: data.maxScore ?? 100,
+      companyId: company.id,
+      image: null,
+      fileUrl: null,
+      publicId: null
     });
 
-    return {
-      total,
-      list,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit)
-    };
-  }
+    // If files present, send event to kafka to upload
+    try {
+      const image = files?.images?.[0];
+      const file = files?.files?.[0];
 
-  /** GET BY ID */
-  async getById(id) {
-    const challenge = await db.ChallengeTest.findByPk(id, {
-      include: [{ model: db.Company, attributes: ['id', 'name'] }]
-    });
-
-    if (!challenge) throw new Error('Không tìm thấy Challenge Test');
+      if (image || file) {
+        await kafkaModule.producers.challengeTestProducer.sendEvent({
+          challengeTestId: challenge.id,
+          type: "CREATE",
+          imageBase64: image ? image.buffer.toString('base64') : undefined,
+          fileBase64: file ? file.buffer.toString('base64') : undefined,
+          fileName: file ? file.originalname : undefined
+        });
+      }
+    } catch (err) {
+      console.error('Lỗi gửi event challenge create', err);
+      throw new Error('Lỗi xử lý file challenge test');
+    }
 
     return challenge;
   }
 
-  /** UPDATE */
-  async update(companyId, id, data, files) {
-    const challenge = await db.ChallengeTest.findByPk(id);
-    if (!challenge) throw new Error('Challenge Test không tồn tại');
+  async getAll(page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
+    const { rows, count } = await db.ChallengeTest.findAndCountAll({
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
 
-    if (challenge.companyId !== companyId)
-      throw new Error('Không có quyền sửa Challenge này');
+    return { total: count, page, limit, data: rows };
+  }
+
+  async getById(id) {
+    const item = await db.ChallengeTest.findByPk(id);
+    if (!item) throw new Error('ChallengeTest không tồn tại');
+    return item;
+  }
+
+  async update(userId, id, data, files) {
+    const challenge = await db.ChallengeTest.findByPk(id);
+    if (!challenge) throw new Error('ChallengeTest không tồn tại');
+
+    // Resolve company and check ownership
+    let company = await db.Company.findOne({ where: { userId } });
+    if (!company) company = await db.Company.findByPk(userId);
+    if (!company) throw new Error('Không tìm thấy công ty');
+
+    if (challenge.companyId !== company.id) throw new Error('Không có quyền chỉnh sửa');
 
     await challenge.update({
       title: data.title ?? challenge.title,
       description: data.description ?? challenge.description,
-      deadline: data.deadline ?? challenge.deadline,
+      deadline: data.deadline ? new Date(data.deadline) : challenge.deadline,
       maxScore: data.maxScore ?? challenge.maxScore
     });
 
-    // File update
-    const newImage = files?.image?.[0];
-    const newFile = files?.file?.[0];
+    // If new files provided, send UPDATE event
+    try {
+      const image = files?.images?.[0];
+      const file = files?.files?.[0];
 
-    if (newImage) {
-      await kafkaModule.producers.challengeProducer.sendImageUploadEvent({
-        challengeTestId: challenge.id,
-        type: 'image',
-        bufferBase64: newImage.buffer.toString('base64'),
-        mimeType: newImage.mimetype
-      });
+      if (image || file) {
+        await kafkaModule.producers.challengeTestProducer.sendEvent({
+          challengeTestId: challenge.id,
+          type: 'UPDATE',
+          imageBase64: image ? image.buffer.toString('base64') : undefined,
+          fileBase64: file ? file.buffer.toString('base64') : undefined,
+          oldImagePublicId: challenge.publicId,
+          fileName: file ? file.originalname : undefined
+        });
+      }
+    } catch (err) {
+      console.error('Lỗi gửi event challenge update', err);
+      throw new Error('Lỗi xử lý file challenge test');
     }
 
-    if (newFile) {
-      await kafkaModule.producers.challengeProducer.sendFileUploadEvent({
-        challengeTestId: challenge.id,
-        type: 'file',
-        bufferBase64: newFile.buffer.toString('base64'),
-        mimeType: newFile.mimetype
-      });
-    }
-
-    return await this.getById(id);
+    return challenge;
   }
 
-  /** DELETE */
-  async delete(companyId, id) {
+  // companyIdOrUserId may be userId; role is required to evaluate permission (ADMIN/COMPANY)
+  async delete(userId, id, role = 'COMPANY') {
     const challenge = await db.ChallengeTest.findByPk(id);
+    if (!challenge) throw new Error('ChallengeTest không tồn tại');
 
-    if (!challenge) {
-      const e = new Error('Challenge Test không tồn tại');
-      e.statusCode = 404;
-      throw e;
+    // Resolve company
+    let company = await db.Company.findOne({ where: { userId } });
+    if (!company) company = await db.Company.findByPk(userId);
+    if (!company) throw new Error('Không tìm thấy công ty');
+
+    if (role === 'COMPANY' && challenge.companyId !== company.id) {
+      throw new Error('Không có quyền xoá');
     }
 
-    if (challenge.companyId !== companyId) {
-      const e = new Error('Không có quyền xóa');
-      e.statusCode = 403;
-      throw e;
+    if (!['ADMIN', 'COMPANY'].includes(role)) throw new Error('Bạn không có quyền xoá challenge');
+
+    // send DELETE event to remove cloudinary image if exists
+    try {
+      if (challenge.publicId) {
+        await kafkaModule.producers.challengeTestProducer.sendEvent({
+          challengeTestId: challenge.id,
+          type: 'DELETE',
+          oldImagePublicId: challenge.publicId
+        });
+      }
+    } catch (err) {
+      console.error('Lỗi gửi event challenge delete', err);
+      throw new Error('Lỗi xóa file challenge test');
     }
 
-    await challenge.destroy();
+    await db.ChallengeTest.destroy({ where: { id: challenge.id } });
+    return true;
   }
 }
 

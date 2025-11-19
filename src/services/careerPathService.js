@@ -6,7 +6,7 @@ const TestService = require("./testService");
 class CareerPathService {
 
   async createCareerPath(companyId, data, files) {
-
+    
     const company = await db.Company.findOne({ where: { userId: companyId} });
     if (!company) {
       throw new Error('không tìm thấy công ty của bạn');

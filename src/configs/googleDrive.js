@@ -1,20 +1,17 @@
 const { google } = require("googleapis");
-const path = require("path");
 
-// Đường dẫn mới (file json trong configs)
-const KEYFILE_PATH = path.join(__dirname, "google-service-account.json");
+const getOAuthDrive = () => {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+  );
 
-const SCOPES = ["https://www.googleapis.com/auth/drive"];
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+  });
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: KEYFILE_PATH,
-  scopes: SCOPES,
-});
-
-// Tạo client Google Drive
-const getDriveClient = async () => {
-  const client = await auth.getClient();
-  return google.drive({ version: "v3", auth: client });
+  return google.drive({ version: 'v3', auth: oauth2Client });
 };
 
-module.exports = { getDriveClient };
+module.exports = { getOAuthDrive };
