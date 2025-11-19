@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     title: { type: DataTypes.STRING, allowNull: false },
     image: { type: DataTypes.STRING, allowNull: true },
+    fileUrl: { type: DataTypes.STRING, allowNull: true },
     description: { type: DataTypes.TEXT },
     deadline: { type: DataTypes.DATE },
     maxScore: { type: DataTypes.FLOAT, defaultValue: 100 }

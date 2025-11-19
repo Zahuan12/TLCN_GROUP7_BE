@@ -4,15 +4,18 @@ const TestService = require("../services/testService");
 const ApiResponse = require("../utils/ApiResponse");
 
 class CareerPathController {
-  async create(req, res) {
+ async create(req, res) {
     try {
-      const companyId = req.user.id;
-      const data = { ...req.body };
-      const course = await CareerPathService.createCourse(companyId, data);
-      return ApiResponse.success(res, "Tạo course thành công", course, 201);
-    } catch (err) {
-      console.error(err);
-      return ApiResponse.error(res, err.message || "Lỗi tạo course", 400);
+      const companyId = req.user.companyId;
+      const data = req.body;
+      const files = req.files;
+
+      const result = await CareerPathService.createCareerPath(companyId, data, files);
+
+      return ApiResponse.success(res, 'Tạo career path thành công', result, 201);
+    } catch (error) {
+      console.error('[CareerPathController.create]', error);
+      return ApiResponse.error(res, error.message || 'Lỗi tạo career path', 400);
     }
   }
 
@@ -20,7 +23,7 @@ class CareerPathController {
     try {
       const companyId = req.user.id;
       const courseId = req.params.id;
-      const data = { ...req.body };
+      const data = req.body ;
       const course = await CareerPathService.updateCourse(companyId, courseId, data);
       return ApiResponse.success(res, "Cập nhật course thành công", course);
     } catch (err) {

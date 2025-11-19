@@ -1,5 +1,5 @@
 const { Kafka } = require("kafkajs");
-require("dotenv").config();
+// require("dotenv").config();
 
 if (!process.env.KAFKA_BROKERS) {
   throw new Error("KAFKA_BROKERS is not set in .env!");

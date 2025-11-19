@@ -4,6 +4,7 @@ const CareerPathController = require("../controllers/careerPathController");
 const LessonController = require("../controllers/lessonController");
 const AuthMiddleware = require("../middlewares/AuthMiddleware");
 const RoleMiddleware = require("../middlewares/RoleMiddleware");
+const { uploadFields, validateMagicBytes } = require("../middlewares/uploadMiddleware");
 
 // Public
 router.get("/", CareerPathController.getAll);
@@ -13,7 +14,8 @@ router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm 
 router.use(AuthMiddleware.verifyToken);
 router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
 
-router.post("/", CareerPathController.create);
+router.post("/", uploadFields, validateMagicBytes, CareerPathController.create);
+
 router.put("/:id", CareerPathController.update);
 router.delete("/:id", CareerPathController.delete);
 

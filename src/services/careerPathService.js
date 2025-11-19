@@ -5,34 +5,33 @@ const TestService = require("./testService");
 
 class CareerPathService {
 
-  async createCourse(companyId, data) {
-    if (!data.title) throw new Error("Course cần có tiêu đề");
+  async createCareerPath(companyId, data, files) {
 
-    const course = await db.CareerPath.create({
+    // Tạo CareerPath trước
+    const careerPath = await db.CareerPath.create({
       title: data.title,
       description: data.description || null,
+      category: data.category || null,
       companyId,
       image: null,
       publicId: null
     });
 
-    if (data.fileBase64) {
-      try {
-        await kafkaModule.producers.courseImageProducer.sendUploadEvent({
-          courseId: course.id,
-          bufferBase64: data.fileBase64,
-          originalName: data.originalName,
-          mimeType: data.mimeType,
-          size: data.size,
-          type: "CREATE"
-        });
-      } catch (error) {
-        console.error("Lỗi upload ảnh: ", error);
-        throw new Error("Lỗi upload ảnh course");
-      }
+    // Nếu có upload ảnh
+    if (files?.images?.length) {
+      const file = files.images[0];
+
+      await kafkaModule.producers.courseImageProducer.sendUploadEvent({
+        courseId: careerPath.id,
+        bufferBase64: file.buffer.toString('base64'),
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        type: "CREATE"
+      });
     }
 
-    return course;
+    return careerPath;
   }
 
   async updateCourse(companyId, courseId, data) {
