@@ -6,22 +6,26 @@ class ConversationService {
   // Tạo hoặc lấy conversation giữa 2 người
   async getOrCreateConversation(userId, otherUserId) {
     if (!otherUserId) throw new Error("otherUserId is required");
-
-    // Kiểm tra đã có conversation PRIVATE giữa 2 người chưa
-    const conversation = await db.Conversation.findOne({
+    // Tìm tất cả conversation PRIVATE mà user đang tham gia
+    const userConvos = await db.Conversation.findAll({
       where: { type: "PRIVATE" },
       include: [
         {
           model: db.User,
           through: { attributes: [] },
-          where: { id: { [Op.in]: [userId, otherUserId] } },
+          where: { id: userId },
         },
       ],
-      group: ["Conversation.id"],
-      having: db.sequelize.literal("COUNT(User.id) = 2"),
     });
 
-    if (conversation) return conversation;
+    // Kiểm tra từng conversation xem có đúng 2 participant và có otherUserId
+    for (const convo of userConvos) {
+      const participants = await convo.getUsers({ attributes: ["id"] });
+      const ids = participants.map((p) => p.id);
+      if (ids.length === 2 && ids.includes(otherUserId)) {
+        return convo;
+      }
+    }
 
     // Nếu chưa có → tạo mới
     const newConvo = await db.Conversation.create({ type: "PRIVATE" });
@@ -92,6 +96,14 @@ class ConversationService {
     );
 
     return results;
+  }
+
+  // Lấy participants của conversation
+  async getParticipants(conversationId) {
+    const convo = await db.Conversation.findByPk(conversationId);
+    if (!convo) throw new Error('Conversation not found');
+    const participants = await convo.getUsers({ attributes: ['id', 'username', 'fullName', 'avatar'] });
+    return participants;
   }
 
   // Gửi tin nhắn
