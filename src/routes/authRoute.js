@@ -9,9 +9,7 @@ router.post("/",authcontroller.login)
 router.post("/refresh-token", authcontroller.refreshToken);
 router.post("/logout", AuthMiddleware.verifyToken, authcontroller.logout);
 router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email'],  // Thêm scope cho Google Drive nếu cần
-  accessType: "offline",  // Cần có accessType "offline" để nhận refresh token
-  prompt: "consent"  // Đảm bảo luôn hỏi người dùng cấp quyền (để nhận refresh token)
+  scope: ['profile', 'email']
 }));
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/login', session: false }),

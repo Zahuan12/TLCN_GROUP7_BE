@@ -38,7 +38,6 @@ class AuthController {
   try {
     const googleData = req.user;
     console.log("GOOGLE USER:", req.user);
-    console.log("GOOGLE USER EMAIL:", req.user);
     const result = await authService.loginWithGoogle(googleData);
 
     if (!process.env.FRONTEND_URL) {

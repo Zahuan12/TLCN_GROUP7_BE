@@ -132,7 +132,7 @@ class ChallengeTestHandler {
   });
 
   // Trả về URL của file vừa upload
-  return `https://drive.google.com/file/d/${file.data.id}/view`;
+  return `https://drive.google.com/uc?export=download&id=${file.data.id}`;
 }
 
 
