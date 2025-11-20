@@ -54,6 +54,46 @@ class ConversationService {
     return messages.reverse(); 
   }
 
+  // Lấy danh sách conversation của 1 user kèm lastMessage và participants
+  async listConversations(userId) {
+    if (!userId) throw new Error('userId is required');
+
+    // Lấy conversation mà user tham gia
+    const conversations = await db.Conversation.findAll({
+      include: [
+        {
+          model: db.User,
+          through: { attributes: [] },
+          attributes: ["id", "username", "fullName", "avatar"],
+          where: { id: userId },
+        },
+      ],
+      order: [["updatedAt", "DESC"]],
+    });
+
+    // Đối với mỗi conversation lấy last message và participants
+    const results = await Promise.all(
+      conversations.map(async (convo) => {
+        const lastMessage = await db.Message.findOne({
+          where: { conversationId: convo.id },
+          order: [["createdAt", "DESC"]],
+          include: [{ model: db.User, as: "sender", attributes: ["id", "username", "avatar"] }],
+        });
+
+        // lấy tất cả user tham gia
+        const participants = await convo.getUsers({ attributes: ["id", "username", "fullName", "avatar"] });
+
+        return {
+          conversation: convo,
+          lastMessage,
+          participants,
+        };
+      })
+    );
+
+    return results;
+  }
+
   // Gửi tin nhắn
   async sendMessage(conversationId, senderId, content) {
     if (!content || !content.trim()) {

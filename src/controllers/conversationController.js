@@ -37,6 +37,16 @@ class ConversationController {
     }
   }
 
+  async listConversations(req, res) {
+    try {
+      const userId = req.user.id;
+      const list = await ConversationService.listConversations(userId);
+      return ApiResponse.success(res, 'OK', list);
+    } catch (err) {
+      return ApiResponse.error(res, err.message, 400);
+    }
+  }
+
   async sendMessage(req, res) {
     try {
       const senderId = req.user.id;

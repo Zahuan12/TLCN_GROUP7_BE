@@ -71,8 +71,13 @@ class CareerPathService {
   async deleteCourse(companyId, courseId, role) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
+    
+    const company = await db.Company.findOne({ where: { userId: companyId} });
+    if (!company) {
+      throw new Error('không tìm thấy công ty của bạn');
+    }
 
-    if (role === "COMPANY" && course.companyId !== companyId) {
+    if (role === "COMPANY" && course.companyId !== company.id) {
       throw new Error("Không có quyền xoá");
     }
 

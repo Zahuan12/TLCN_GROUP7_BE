@@ -6,6 +6,9 @@ const Auth = require("../middlewares/AuthMiddleware");
 // Tất cả require login
 router.use(Auth.verifyToken);
 
+// 0. Lấy danh sách conversation của user
+router.get("/", ConversationController.listConversations);
+
 // 1. Lấy hoặc tạo conversation
 router.get("/:userId", ConversationController.getOrCreateConversation);
 
