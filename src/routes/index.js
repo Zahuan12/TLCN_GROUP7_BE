@@ -9,8 +9,8 @@ const likeRouter = require('./likeRoute');
 const careerPathRouter = require('./careerPathRoute');
 const lessonRouter = require('./lessonRoute');
 const testRouter = require('./testRoute');
-const companyRouter = require('./companyRoute'); 
-const followRouter = require('./followRoute'); 
+const conversationRouter = require('./conversationRoute');
+const notificationRouter = require('./notificationRoute');
 
 function route(app) {
     app.use("/auth",authRouter)
@@ -25,8 +25,8 @@ function route(app) {
     app.use("/career-paths", careerPathRouter); 
     app.use("/lessons", lessonRouter);
     app.use("/tests", testRouter);
-    app.use("/companies", companyRouter); 
-    app.use("/follows", followRouter); 
+    app.use("/conversations", conversationRouter);
+    app.use("/notifications", notificationRouter);
 }
 
 module.exports = route;
