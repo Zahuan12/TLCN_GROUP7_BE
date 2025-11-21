@@ -11,6 +11,7 @@ const lessonRouter = require('./lessonRoute');
 const testRouter = require('./testRoute');
 const conversationRouter = require('./conversationRoute');
 const notificationRouter = require('./notificationRoute');
+const companyRouter = require('./companyRoute');
 
 function route(app) {
     app.use("/auth",authRouter)
@@ -18,7 +19,6 @@ function route(app) {
     app.use("/blogs",blogRouter)
     app.use("/career-test", careerTestRouter)
     app.use("/challenge-tests", challengeTestRouter)
-    app.use("/students", studentRouter)
     app.use("/comments", commentRouter)
     app.use("/likes", likeRouter);
     app.use("/students", studentRouter)  
@@ -27,6 +27,7 @@ function route(app) {
     app.use("/tests", testRouter);
     app.use("/conversations", conversationRouter);
     app.use("/notifications", notificationRouter);
+    app.use("/companies", companyRouter);
 }
 
 module.exports = route;

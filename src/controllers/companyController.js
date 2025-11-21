@@ -18,15 +18,17 @@ class CompanyController {
     try {
       const userId = req.user.id;
 
+      const body = req.body || {};
+
       const userPayload = {};
       for (const key of ['email', 'username', 'fullName', 'isActive']) {
-        if (req.body[key] !== undefined) userPayload[key] = req.body[key];
+        if (body[key] !== undefined) userPayload[key] = body[key];
       }
       if (Object.keys(userPayload).length > 0) {
         await UserService.updateUser(userId, userPayload);
       }
 
-      const { companyName, taxCode, industry, website, description } = req.body;
+      const { companyName, taxCode, industry, website, description } = body;
       await CompanyService.updateProfile(userId, { companyName, taxCode, industry, website, description });
 
       const updated = await UserService.getUserById(userId);
