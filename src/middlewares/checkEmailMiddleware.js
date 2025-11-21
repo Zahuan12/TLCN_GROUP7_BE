@@ -1,4 +1,3 @@
-// middlewares/checkEmail.js
 const validator = require("deep-email-validator");
 
 module.exports = async function checkEmail(req, res, next) {
@@ -12,10 +11,10 @@ module.exports = async function checkEmail(req, res, next) {
       });
     }
 
-    // TẮT SMTP CHECK
-    const result = await validator.validate(email, {
-      validateSMTP: false, 
-      validateDNS: true,    
+    const result = await validator.validate({
+      email,
+      validateSMTP: false,
+      validateDNS: true,
       validateRegex: true
     });
 
