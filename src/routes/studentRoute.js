@@ -15,4 +15,7 @@ router.post("/submit-test", studentController.submitTest);
 // Lấy tiến độ theo CareerPath
 router.get("/progress/:careerPathId", studentController.getCareerPathProgress);
 
+router.get("/profile", studentController.getProfile);
+router.put("/profile", studentController.updateProfile);
+
 module.exports = router;

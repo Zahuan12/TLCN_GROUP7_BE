@@ -12,7 +12,6 @@ module.exports = async function checkEmail(req, res, next) {
       });
     }
 
-    const result = await validator.validate(email);
 
     if (!result.valid) {
       return res.status(400).json({
