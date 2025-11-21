@@ -77,6 +77,19 @@ class CareerPathController {
       return ApiResponse.error(res, err.message || "Không tìm thấy course", 404);
     }
   }
+
+  async getMyCourses(req, res) {
+    try {
+      const companyId = req.user.id;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const result = await CareerPathService.getCoursesByCompany(companyId, page, limit);
+      return ApiResponse.success(res, "Lấy danh sách course của công ty thành công", result);
+    } catch (err) {
+      console.error('[CareerPathController.getMyCourses]', err);
+      return ApiResponse.error(res, err.message || "Lỗi server", 500);
+    }
+  }
 }
 
 module.exports = new CareerPathController();

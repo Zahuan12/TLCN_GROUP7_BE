@@ -141,6 +141,29 @@ class CareerPathService {
 
     return course;
   }
+
+  async getCoursesByCompany(companyId, page = 1, limit = 10) {
+    const company = await db.Company.findOne({ where: { userId: companyId } });
+    if (!company) {
+      throw new Error('Không tìm thấy công ty của bạn');
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await db.CareerPath.findAndCountAll({
+      where: { companyId: company.id },
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]]
+    });
+
+    return {
+      total: count,
+      page,
+      limit,
+      data: rows
+    };
+  }
 }
 
 module.exports = new CareerPathService();

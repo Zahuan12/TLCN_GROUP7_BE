@@ -8,11 +8,16 @@ const { uploadFields, validateMagicBytes } = require("../middlewares/uploadMiddl
 
 // Public
 router.get("/", CareerPathController.getAll);
-router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm lessons + final test
 
 // Protected routes
 router.use(AuthMiddleware.verifyToken);
 router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
+
+// Company gets their own courses - MUST be before /:id route
+router.get("/my-courses", CareerPathController.getMyCourses);
+
+// Public route with ID param - after protected specific routes
+router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm lessons + final test
 
 router.post("/", uploadFields, validateMagicBytes, CareerPathController.create);
 
