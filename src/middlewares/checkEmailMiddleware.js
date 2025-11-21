@@ -12,6 +12,12 @@ module.exports = async function checkEmail(req, res, next) {
       });
     }
 
+    // TẮT SMTP CHECK
+    const result = await validator.validate(email, {
+      validateSMTP: false, 
+      validateDNS: true,    
+      validateRegex: true
+    });
 
     if (!result.valid) {
       return res.status(400).json({
@@ -20,7 +26,6 @@ module.exports = async function checkEmail(req, res, next) {
       });
     }
 
-    
     next();
   } catch (err) {
     console.error("Email validation error:", err);
