@@ -58,6 +58,17 @@ class StudentController {
       return ApiResponse.error(res, error.message || "Không lấy được tiến độ", 400);
     }
   }
+
+  async getEnrolledCourses(req, res) {
+    try {
+      const studentId = req.user.id;
+      const result = await studentService.getEnrolledCourses(studentId);
+      return ApiResponse.success(res, "Lấy danh sách khóa học đang tham gia thành công", result);
+    } catch (error) {
+      console.error("[StudentController.getEnrolledCourses]", error);
+      return ApiResponse.error(res, error.message || "Không lấy được danh sách khóa học", 400);
+    }
+  }
   
     async getProfile(req, res) {
       try {

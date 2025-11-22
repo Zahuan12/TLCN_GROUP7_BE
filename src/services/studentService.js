@@ -105,6 +105,35 @@ async checkCareerPathCompletion(studentId, careerPathId) {
   }
 }
 
+  async getEnrolledCourses(userId) {
+    const student = await db.Student.findOne({ where: { userId } });
+    if (!student) throw new Error("Student không tồn tại");
+
+    const enrolledCourses = await db.StudentProgress.findAll({
+      where: { studentId: student.id },
+      include: [
+        {
+          model: db.CareerPath,
+          as: 'CareerPath',
+          include: [
+            {
+              model: db.Company,
+              as: 'Company',
+              attributes: ['id', 'companyName', 'logo']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return enrolledCourses.map(progress => ({
+      progressId: progress.id,
+      status: progress.status,
+      enrolledAt: progress.createdAt,
+      course: progress.CareerPath
+    }));
+  }
    
   async updateProfile(userId, data) {
     const student = await db.Student.findOne({ where: { userId } });

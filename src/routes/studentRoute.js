@@ -15,6 +15,9 @@ router.post("/submit-test", studentController.submitTest);
 // Lấy tiến độ theo CareerPath
 router.get("/progress/:careerPathId", studentController.getCareerPathProgress);
 
+// Lấy tất cả khóa học đang tham gia
+router.get("/enrolled-courses", studentController.getEnrolledCourses);
+
 router.get("/profile", studentController.getProfile);
 router.put("/profile", studentController.updateProfile);
 
