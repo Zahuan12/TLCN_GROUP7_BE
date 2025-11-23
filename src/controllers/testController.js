@@ -38,6 +38,36 @@ class TestController {
       return ApiResponse.error(res, err.message || "Bài test không tồn tại", 404);
     }
   }
+
+  // AI Grading
+  async submitTest(req, res) {
+    try {
+      const userId = req.user.id;
+      const testId = req.params.id;
+      const { answers } = req.body;
+
+      if (!answers || !Array.isArray(answers)) {
+        return ApiResponse.error(res, 'Thiếu answers array', 400);
+      }
+
+      const result = await TestService.submitAndGrade(userId, testId, answers);
+      return ApiResponse.success(res, 'Nộp bài và chấm điểm thành công', result);
+    } catch (error) {
+      console.error('[TestController.submitTest]', error);
+      return ApiResponse.error(res, error.message || 'Lỗi nộp bài', 500);
+    }
+  }
+
+  async getTestResults(req, res) {
+    try {
+      const testId = req.params.id;
+      const results = await TestService.getResults(testId);
+      return ApiResponse.success(res, 'Lấy kết quả thành công', results);
+    } catch (error) {
+      console.error('[TestController.getTestResults]', error);
+      return ApiResponse.error(res, error.message || 'Lỗi lấy kết quả', 500);
+    }
+  }
 }
 
 module.exports = new TestController();

@@ -13,6 +13,31 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       references: { model: 'students', key: 'userId' }, 
       onDelete: 'CASCADE'
+    },
+    answers: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: 'Student answers array: [{questionId, answer}]'
+    },
+    feedback: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Detailed feedback from AI grading'
+    },
+    aiGrading: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: 'Full AI grading result: {score, correctCount, totalQuestions, feedback, suggestions, details}'
+    },
+    passed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      comment: 'Whether the student passed the test'
+    },
+    completedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the test was completed'
     }
   }, {
     tableName: 'student_test_results',

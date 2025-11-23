@@ -29,6 +29,7 @@ db.ChallengeSubmission = require("./challengeSubmission")(sequelize, Sequelize.D
 db.CareerTest = require("./careerTestModel")(sequelize, Sequelize.DataTypes);
 db.Otp = require("./otpModel")(sequelize, Sequelize.DataTypes);
 db.BlogMedia = require("./BlogMediaModel")(sequelize, Sequelize.DataTypes);
+db.ChatSession = require("./chatSessionModel")(sequelize, Sequelize.DataTypes);
 
 
 // Setup associations
