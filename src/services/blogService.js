@@ -17,7 +17,10 @@ class BlogService {
     });
 
     // Upload files song song (parallel)
-    const allFiles = [...(files?.images || []), ...(files?.files || [])];
+    // Hỗ trợ cả uploadFields (files.images/files.files) và uploadAny (files array)
+    const allFiles = Array.isArray(files) 
+      ? files 
+      : [...(files?.images || []), ...(files?.files || [])];
     
     if (allFiles.length === 0) {
       await newBlog.update({ status: 'published' });
@@ -168,7 +171,10 @@ class BlogService {
     await blog.update(updateData);
 
     // Xử lý upload file mới song song
-    const allFiles = [...(files?.images || []), ...(files?.files || [])];
+    // Hỗ trợ cả uploadFields và uploadAny
+    const allFiles = Array.isArray(files) 
+      ? files 
+      : [...(files?.images || []), ...(files?.files || [])];
     
     if (allFiles.length > 0) {
       try {
