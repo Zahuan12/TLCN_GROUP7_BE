@@ -8,8 +8,8 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   StudentProgress.associate = (models) => {
-    StudentProgress.belongsTo(models.Student, { foreignKey: 'studentId' });
-    StudentProgress.belongsTo(models.CareerPath, { foreignKey: 'careerPathId' });
+    StudentProgress.belongsTo(models.Student, { foreignKey: 'studentId', as: 'student' });
+    StudentProgress.belongsTo(models.CareerPath, { foreignKey: 'careerPathId', as: 'careerPath' });
   };
 
   return StudentProgress;

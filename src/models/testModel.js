@@ -52,6 +52,7 @@ module.exports = (sequelize, DataTypes) => {
     // Một Test thuộc về Lesson (có thể null nếu là FINAL_PATH)
     Test.belongsTo(models.Lesson, {
       foreignKey: 'lessonId',
+      as: 'lesson',
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     });
