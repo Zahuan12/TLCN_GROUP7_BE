@@ -90,6 +90,24 @@ class CareerPathController {
       return ApiResponse.error(res, err.message || "Lỗi server", 500);
     }
   }
+
+  async updateStatus(req, res) {
+    try {
+      const companyId = req.user.id;
+      const courseId = req.params.id;
+      const { status } = req.body;
+
+      if (!['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(status)) {
+        return ApiResponse.error(res, "Status không hợp lệ. Chỉ chấp nhận: DRAFT, PUBLISHED, ARCHIVED", 400);
+      }
+
+      const course = await CareerPathService.updateCourseStatus(companyId, courseId, status);
+      return ApiResponse.success(res, `Cập nhật status thành ${status} thành công`, course);
+    } catch (err) {
+      console.error('[CareerPathController.updateStatus]', err);
+      return ApiResponse.error(res, err.message || "Lỗi cập nhật status", 400);
+    }
+  }
 }
 
 module.exports = new CareerPathController();

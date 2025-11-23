@@ -8,6 +8,11 @@ module.exports = (sequelize, DataTypes) => {
     title: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT },
     image: { type: DataTypes.STRING, allowNull: true },
+    status: {
+      type: DataTypes.ENUM('DRAFT', 'PUBLISHED', 'ARCHIVED'),
+      defaultValue: 'DRAFT',
+      allowNull: false
+    },
     companyId: {
       type: DataTypes.UUID,
       allowNull: false,

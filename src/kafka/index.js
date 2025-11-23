@@ -9,7 +9,6 @@ class KafkaManager {
     // Khởi tạo tất cả producer
     this.producers = {
       mailProducer: new producers.mailProducer(this.kafka),
-      blogMediaProducer: new producers.blogMediaProducer(this.kafka),
       courseImageProducer: new producers.courseImageProducer(this.kafka),
       challengeTestProducer: new producers.challengeTestProducer(this.kafka),
     };
@@ -17,7 +16,6 @@ class KafkaManager {
     // Khởi tạo tất cả consumer
     this.consumers = {
       mailConsumer: new consumers.mailConsumer(this.kafka),
-      blogMediaConsumer: new consumers.blogMediaConsumer(this.kafka),
       courseImageConsumer: new consumers.courseImageConsumer(this.kafka),
       challengeTestConsumer: new consumers.challengeTestConsumer(this.kafka),
     };
@@ -25,7 +23,6 @@ class KafkaManager {
     // Danh sách các topic cần check/tạo
     this.topics = [
       { topic: "mail-events", numPartitions: 1, replicationFactor: 1 },
-      { topic: "blog-media-events", numPartitions: 1, replicationFactor: 1 },
       { topic: "course-image-events", numPartitions: 1, replicationFactor: 1 },
       { topic: process.env.KAFKA_CHALLENGE_TEST_TOPIC || "challenge-test-events", numPartitions: 1, replicationFactor: 1 },
     ];

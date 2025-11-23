@@ -22,6 +22,7 @@ router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm 
 router.post("/", uploadFields, validateMagicBytes, CareerPathController.create);
 
 router.put("/:id", CareerPathController.update);
+router.patch("/:id/status", CareerPathController.updateStatus);
 router.delete("/:id", CareerPathController.delete);
 
 // Create lesson under a career path

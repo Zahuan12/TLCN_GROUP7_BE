@@ -143,6 +143,7 @@ GIỚI HẠN VÀ RANH GIỚI:
       
       const courses = await db.CareerPath.findAll({
         where: {
+          status: 'PUBLISHED',
           [Op.or]: [
             { title: { [Op.like]: `%${query}%` } },
             { description: { [Op.like]: `%${query}%` } }

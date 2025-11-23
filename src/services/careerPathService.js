@@ -18,7 +18,8 @@ class CareerPathService {
       category: data.category || null,
       companyId: company.id,
       image: null,
-      publicId: null
+      publicId: null,
+      status: data.status || 'DRAFT'
     });
 
     // Nếu có upload ảnh
@@ -45,7 +46,8 @@ class CareerPathService {
 
     await course.update({
       title: data.title ?? course.title,
-      description: data.description ?? course.description
+      description: data.description ?? course.description,
+      status: data.status ?? course.status
     });
 
     if (data.fileBase64) {
@@ -106,6 +108,7 @@ class CareerPathService {
     const offset = (page - 1) * limit;
 
     const { rows, count } = await db.CareerPath.findAndCountAll({
+      where: { status: 'PUBLISHED' },
       limit,
       offset,
       order: [["createdAt", "DESC"]]
@@ -123,6 +126,7 @@ class CareerPathService {
   async getCourseById(courseId) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
+    if (course.status !== 'PUBLISHED') throw new Error("Course chưa được xuất bản");
 
     // Lấy lessons thuộc course
     const lessons = await LessonService.getAllLessons(courseId);
@@ -163,6 +167,19 @@ class CareerPathService {
       limit,
       data: rows
     };
+  }
+
+  async updateCourseStatus(companyId, courseId, status) {
+    const course = await db.CareerPath.findByPk(courseId);
+    if (!course) throw new Error("Course không tồn tại");
+    
+    const company = await db.Company.findOne({ where: { userId: companyId } });
+    if (!company) throw new Error('Không tìm thấy công ty của bạn');
+    
+    if (course.companyId !== company.id) throw new Error("Không có quyền chỉnh sửa");
+
+    await course.update({ status });
+    return course;
   }
 }
 
