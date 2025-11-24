@@ -121,8 +121,31 @@ const validateMagicBytes = (req, res, next) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+  limits: { 
+    fileSize: 20 * 1024 * 1024, // 20MB per file
+    files: 15 // Max 15 files total
+  }
 });
+
+// 7. Debug middleware để log files nhận được
+const debugUpload = (req, res, next) => {
+  console.log('[uploadMiddleware] Files received:', {
+    filesArray: Array.isArray(req.files) ? req.files.length : 0,
+    filesObject: req.files && !Array.isArray(req.files) ? Object.keys(req.files) : null,
+    fileCount: req.files ? (Array.isArray(req.files) ? req.files.length : Object.values(req.files).flat().length) : 0,
+    body: Object.keys(req.body)
+  });
+  
+  // Log chi tiết từng file
+  if (req.files) {
+    const allFiles = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+    allFiles.forEach((file, i) => {
+      console.log(`  File ${i + 1}: ${file.fieldname} -> ${file.originalname} (${file.size} bytes)`);
+    });
+  }
+  
+  next();
+};
 
 module.exports = {
   // Strict mode: chỉ chấp nhận images và files
@@ -131,8 +154,11 @@ module.exports = {
     { name: "files", maxCount: 5 }
   ]),
   
+  // Blog upload: accept multiple images with same field name
+  uploadBlogImages: [upload.array('images', 10), debugUpload],
+  
   // Flexible mode: chấp nhận bất kỳ field name nào (tối đa 15 files)
-  uploadAny: upload.any(),
+  uploadAny: [upload.any(), debugUpload],
   
   validateMagicBytes
 };
