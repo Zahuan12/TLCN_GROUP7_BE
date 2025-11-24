@@ -123,10 +123,19 @@ class CareerPathService {
   }
 
   // === CHỈNH PHẦN FOLLOW ===
-  async getCourseById(courseId) {
-    const course = await db.CareerPath.findByPk(courseId);
+  async getCourseById(courseId, userId = null) {
+    const course = await db.CareerPath.findByPk(courseId, {
+      include: [{ model: db.Company, as: 'company', attributes: ['id', 'userId'] }]
+    });
     if (!course) throw new Error("Course không tồn tại");
-    if (course.status !== 'PUBLISHED') throw new Error("Course chưa được xuất bản");
+    
+    // Check quyền xem: Owner (company) hoặc Admin có thể xem tất cả status
+    const isOwner = userId && course.company?.userId === userId;
+    
+    // Nếu không phải owner và course chưa published -> không cho xem
+    if (!isOwner && course.status !== 'PUBLISHED') {
+      throw new Error("Course chưa được xuất bản");
+    }
 
     // Lấy lessons thuộc course
     const lessons = await LessonService.getAllLessons(courseId);

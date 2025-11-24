@@ -46,7 +46,8 @@ class CareerPathController {
   async getById(req, res) {
     try {
       const courseId = req.params.id;
-      const course = await CareerPathService.getCourseById(courseId);
+      const userId = req.user?.id; // Có thể null nếu chưa login
+      const course = await CareerPathService.getCourseById(courseId, userId);
 
       // Lấy tất cả lessons thuộc careerPath
       const lessons = await LessonService.getAllLessons(courseId);

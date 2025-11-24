@@ -6,18 +6,18 @@ const AuthMiddleware = require("../middlewares/AuthMiddleware");
 const RoleMiddleware = require("../middlewares/RoleMiddleware");
 const { uploadFields, validateMagicBytes } = require("../middlewares/uploadMiddleware");
 
-// Public
+// Public routes
 router.get("/", CareerPathController.getAll);
 
-// Protected routes
+// Protected routes with specific paths (MUST be before /:id)
+router.get("/my-courses", AuthMiddleware.verifyToken, RoleMiddleware.checkRole(["COMPANY", "ADMIN"]), CareerPathController.getMyCourses);
+
+// Public route with ID param (AFTER specific paths)
+router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm lessons + final test (public hoặc owner)
+
+// Protected CRUD operations
 router.use(AuthMiddleware.verifyToken);
 router.use(RoleMiddleware.checkRole(["COMPANY", "ADMIN"]));
-
-// Company gets their own courses - MUST be before /:id route
-router.get("/my-courses", CareerPathController.getMyCourses);
-
-// Public route with ID param - after protected specific routes
-router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm lessons + final test
 
 router.post("/", uploadFields, validateMagicBytes, CareerPathController.create);
 
