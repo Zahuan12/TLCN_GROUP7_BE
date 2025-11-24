@@ -57,8 +57,12 @@ class AuthService {
 
     if (!storedToken) throw new Error('Refresh token không hợp lệ');
 
+    // Lấy thông tin user mới nhất từ DB để đảm bảo role đúng
+    const user = await db.User.findByPk(decoded.id);
+    if (!user) throw new Error('Người dùng không tồn tại');
+
     // Tạo access token mới
-    const newAccessToken = JwtUtils.signAccess({ id: decoded.id, role: decoded.role });
+    const newAccessToken = JwtUtils.signAccess({ id: user.id, role: user.role });
 
     return { accessToken: newAccessToken };
   }
@@ -67,76 +71,76 @@ class AuthService {
     // Xoá tất cả refresh token của user → buộc đăng nhập lại
     await db.RefreshToken.destroy({ where: { userId } });
   }
-   async loginWithGoogle(googleData) {
-  let user = await db.User.findOne({ where: { email: googleData.email } });
+  async loginWithGoogle(googleData) {
+    let user = await db.User.findOne({ where: { email: googleData.email } });
 
-  if (!user) {
-    user = await db.User.create({
-      email: googleData.email,
-      fullName: googleData.fullName,
-      role: 'STUDENT', // default hoặc để FE chọn role sau
+    if (!user) {
+      user = await db.User.create({
+        email: googleData.email,
+        fullName: googleData.fullName,
+        role: 'STUDENT', // default hoặc để FE chọn role sau
+      });
+    }
+
+    // Kiểm tra hoặc tạo AuthProvider
+    let provider = await db.AuthProvider.findOne({
+      where: { provider: 'GOOGLE', providerId: googleData.providerId }
     });
-  }
 
-  // Kiểm tra hoặc tạo AuthProvider
-  let provider = await db.AuthProvider.findOne({
-    where: { provider: 'GOOGLE', providerId: googleData.providerId }
-  });
+    if (!provider) {
+      await db.AuthProvider.create({
+        provider: 'GOOGLE',
+        providerId: googleData.providerId,
+        userId: user.id
+      });
+    }
 
-  if (!provider) {
-    await db.AuthProvider.create({
-      provider: 'GOOGLE',
-      providerId: googleData.providerId,
-      userId: user.id
+    // Kiểm tra refreshToken hiện tại trong DB (nếu có)
+    let existingRefresh = await db.RefreshToken.findOne({
+      where: { userId: user.id },
+      order: [['createdAt', 'DESC']]
     });
-  }
 
-  // Kiểm tra refreshToken hiện tại trong DB (nếu có)
-  let existingRefresh = await db.RefreshToken.findOne({
-    where: { userId: user.id },
-    order: [['createdAt', 'DESC']]
-  });
-
-  let refreshToken;
-  if (existingRefresh) {
-    try {
-      // Nếu token cũ vẫn còn hạn → tái sử dụng
-      JwtUtils.verifyRefresh(existingRefresh.token);
-      refreshToken = existingRefresh.token;
-    } catch (err) {
-      // Token cũ hết hạn → tạo mới + update DB
+    let refreshToken;
+    if (existingRefresh) {
+      try {
+        // Nếu token cũ vẫn còn hạn → tái sử dụng
+        JwtUtils.verifyRefresh(existingRefresh.token);
+        refreshToken = existingRefresh.token;
+      } catch (err) {
+        // Token cũ hết hạn → tạo mới + update DB
+        refreshToken = JwtUtils.signRefresh({ id: user.id });
+        await existingRefresh.update({
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        });
+      }
+    } else {
+      // Chưa có refresh token nào → tạo mới
       refreshToken = JwtUtils.signRefresh({ id: user.id });
-      await existingRefresh.update({
+      await db.RefreshToken.create({
+        userId: user.id,
         token: refreshToken,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       });
     }
-  } else {
-    // Chưa có refresh token nào → tạo mới
-    refreshToken = JwtUtils.signRefresh({ id: user.id });
-    await db.RefreshToken.create({
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    });
+
+    // Luôn tạo access token mới (ngắn hạn)
+    const accessToken = JwtUtils.signAccess({ id: user.id, role: user.role });
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role
+      }
+    };
   }
 
-  // Luôn tạo access token mới (ngắn hạn)
-  const accessToken = JwtUtils.signAccess({ id: user.id, role: user.role });
-
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role
-    }
-  };
-}
-
-async verifyUsername(username) {
+  async verifyUsername(username) {
     //  Tìm user theo username
     const user = await db.User.findOne({ where: { username } });
     if (!user) throw new Error('Người dùng không tồn tại');
@@ -168,7 +172,7 @@ async verifyUsername(username) {
     };
   }
 
-   async verifyOTP( username, otp ) {
+  async verifyOTP(username, otp) {
 
     // Tìm user
     const user = await db.User.findOne({ where: { username } });
@@ -195,26 +199,26 @@ async verifyUsername(username) {
   }
 
   async changePassword(username, newPassword, confirmNewpassword) {
-      const user = await db.User.findOne({ where: { username } });
-      if (!user) throw new Error('Người dùng không tồn tại');
-      if (newPassword !== confirmNewpassword) {
-        throw new Error('Mật khẩu mới và xác nhận mật khẩu không khớp');
-      }
-      // Hash mật khẩu mới
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-  
-      // Cập nhật lại mật khẩu
-      await db.AuthProvider.update(
-        { password: hashedPassword },
-        { where: { userId: user.id, provider: 'LOCAL' } }
-      );
-  
-      return {
+    const user = await db.User.findOne({ where: { username } });
+    if (!user) throw new Error('Người dùng không tồn tại');
+    if (newPassword !== confirmNewpassword) {
+      throw new Error('Mật khẩu mới và xác nhận mật khẩu không khớp');
+    }
+    // Hash mật khẩu mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Cập nhật lại mật khẩu
+    await db.AuthProvider.update(
+      { password: hashedPassword },
+      { where: { userId: user.id, provider: 'LOCAL' } }
+    );
+
+    return {
       id: user.id,
       email: user.email,
       username: user.username,
     };
-    }
+  }
 }
 
 module.exports = new AuthService();
