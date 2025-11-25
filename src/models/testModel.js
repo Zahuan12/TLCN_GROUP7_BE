@@ -17,7 +17,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     content: {
-      type: DataTypes.JSON // có thể chứa quiz, coding test, v.v.
+      type: DataTypes.TEXT('long'), // Đề bài dạng text tự do (có thể dùng Markdown sau)
+      allowNull: true
     },
     maxScore: {
       type: DataTypes.FLOAT,
