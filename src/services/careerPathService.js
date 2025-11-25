@@ -150,7 +150,7 @@ class CareerPathService {
 
     // Gắn miniTests vào từng lesson
     for (let lesson of lessons) {
-      lesson.miniTests = await TestService.getMiniTestsByLesson(lesson.id);
+      lesson.miniTests = await TestService.getTestsByLesson(lesson.id);
     }
 
     // Lấy final test của course
