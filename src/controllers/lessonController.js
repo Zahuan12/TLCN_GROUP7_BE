@@ -17,6 +17,7 @@ class LessonController {
   async getById(req, res) {
     try {
       const lessonId = req.params.id;
+      console.log('[LessonController.getById] Fetching lesson with ID:', lessonId);
       const lesson = await LessonService.getLessonById(lessonId);
 
       // Lấy mini tests
@@ -27,7 +28,7 @@ class LessonController {
         tests
       });
     } catch (err) {
-      console.error(err);
+      console.error('[LessonController.getById] Error:', err.message, 'lessonId:', req.params.id);
       return ApiResponse.error(res, err.message || "Lesson không tồn tại", 404);
     }
   }

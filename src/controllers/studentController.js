@@ -6,14 +6,20 @@ class StudentController {
 
     async joinCareerPath(req, res) {
     try {
-      const studentId = req.user.id;   // lấy từ token
+      const userId = req.user.id;   // lấy từ token
       const { careerPathId } = req.body;
 
       if (!careerPathId) {
         return ApiResponse.error(res, "Thiếu careerPathId", 400);
       }
 
-      const result = await studentService.joinCareerPath(studentId, careerPathId);
+      // Lấy Student record từ userId
+      const student = await studentService.getStudentByUserId(userId);
+      if (!student) {
+        return ApiResponse.error(res, "Student không tồn tại", 404);
+      }
+
+      const result = await studentService.joinCareerPath(student.id, careerPathId);
       return ApiResponse.success(res, "Tham gia CareerPath thành công", result, 201);
     } catch (error) {
       console.error("[StudentController.joinCareerPath]", error);
@@ -26,14 +32,20 @@ class StudentController {
    
   async submitTest(req, res) {
     try {
-      const studentId = req.user.id;
+      const userId = req.user.id;
       const { testId, score } = req.body;
 
       if (!testId || score === undefined) {
         return ApiResponse.error(res, "Thiếu testId hoặc score", 400);
       }
 
-      const result = await studentService.submitTest(studentId, testId, score);
+      // Lấy Student record từ userId
+      const student = await studentService.getStudentByUserId(userId);
+      if (!student) {
+        return ApiResponse.error(res, "Student không tồn tại", 404);
+      }
+
+      const result = await studentService.submitTest(student.id, testId, score);
 
       return ApiResponse.success(res, "Nộp bài test thành công", result, 201);
     } catch (error) {
@@ -47,10 +59,16 @@ class StudentController {
 
   async getCareerPathProgress(req, res) {
     try {
-      const studentId = req.user.id;
+      const userId = req.user.id;
       const { careerPathId } = req.params;
 
-      const result = await studentService.getCareerPathProgress(studentId, careerPathId);
+      // Lấy Student record từ userId
+      const student = await studentService.getStudentByUserId(userId);
+      if (!student) {
+        return ApiResponse.error(res, "Student không tồn tại", 404);
+      }
+
+      const result = await studentService.getCareerPathProgress(student.id, careerPathId);
 
       return ApiResponse.success(res, "Lấy tiến độ thành công", result);
     } catch (error) {

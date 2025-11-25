@@ -1,6 +1,10 @@
 const db = require('../models');
 class StudentService {
 
+  async getStudentByUserId(userId) {
+    const student = await db.Student.findOne({ where: { userId } });
+    return student;
+  }
 
  async joinCareerPath(studentId, careerPathId) {
 
@@ -104,6 +108,45 @@ async checkCareerPathCompletion(studentId, careerPathId) {
     }
   }
 }
+
+  async getCareerPathProgress(studentId, careerPathId) {
+    const progress = await db.StudentProgress.findOne({
+      where: { studentId, careerPathId },
+      include: [
+        {
+          model: db.CareerPath,
+          as: 'CareerPath'
+        }
+      ]
+    });
+
+    if (!progress) {
+      throw new Error("Bạn chưa tham gia career path này");
+    }
+
+    // Lấy danh sách test results
+    const testResults = await db.StudentTestResult.findAll({
+      where: { studentId },
+      include: [
+        {
+          model: db.Test,
+          as: 'test',
+          where: {
+            [db.Sequelize.Op.or]: [
+              { careerPathId },
+              { lessonId: { [db.Sequelize.Op.ne]: null } }
+            ]
+          },
+          required: true
+        }
+      ]
+    });
+
+    return {
+      progress,
+      testResults
+    };
+  }
 
   async getEnrolledCourses(userId) {
     const student = await db.Student.findOne({ where: { userId } });
