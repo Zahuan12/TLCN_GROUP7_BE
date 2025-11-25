@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     studentId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'students', key: 'userId' }, 
+      references: { model: 'students', key: 'id' }, 
       onDelete: 'CASCADE'
     },
     answers: {

@@ -94,6 +94,7 @@ async checkCareerPathCompletion(studentId, careerPathId) {
     include: [
       {
         model: db.Lesson,
+        as: 'lesson',
         required: false,
         where: { careerPathId }
       }
