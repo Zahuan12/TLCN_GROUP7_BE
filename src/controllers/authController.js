@@ -45,30 +45,23 @@ class AuthController {
   }
 
    async googleCallback(req, res) {
-  try {
-    console.log('[googleCallback] === START ===');
-    console.log('[googleCallback] req.user:', req.user);
-    
+  try {   
     const googleData = req.user;
     
     if (!googleData) {
-      console.error('[googleCallback] ERROR: No user data from Google');
       throw new Error("No user data from Google");
     }
 
-    console.log('[googleCallback] Calling loginWithGoogle...');
+
     const result = await authService.loginWithGoogle(googleData);
-    console.log('[googleCallback] Login success, tokens generated');
+ 
 
     if (!process.env.FRONTEND_URL) {
-      console.error('[googleCallback] ERROR: FRONTEND_URL not set');
       throw new Error("FRONTEND_URL is not set in environment variables");
     }
 
     const redirectUrl = `${process.env.FRONTEND_URL}/oauth-success` +
       `?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
-    
-    console.log('[googleCallback] Redirecting to:', redirectUrl);
     return res.redirect(redirectUrl);
   } catch (error) {
     console.error("[googleCallback] FATAL ERROR:", error);
