@@ -132,6 +132,14 @@ class CareerPathService {
     // Check quyền xem: Owner (company) hoặc Admin có thể xem tất cả status
     const isOwner = userId && course.company?.userId === userId;
     
+    console.log('[CareerPathService.getCourseById] Debug:', {
+      courseId,
+      courseStatus: course.status,
+      requestUserId: userId,
+      courseOwnerUserId: course.company?.userId,
+      isOwner
+    });
+    
     // Nếu không phải owner và course chưa published -> không cho xem
     if (!isOwner && course.status !== 'PUBLISHED') {
       throw new Error("Course chưa được xuất bản");

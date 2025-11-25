@@ -25,6 +25,24 @@ class AuthMiddleware {
     }
     
   }
+
+  // Optional token - không bắt buộc, chỉ parse nếu có
+  optionalToken(req, res, next) {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(" ")[1];
+
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // gắn user nếu token hợp lệ
+      }
+      // Nếu không có token hoặc token invalid -> vẫn next (req.user = undefined)
+      next();
+    } catch (error) {
+      // Token invalid nhưng vẫn cho qua (public route)
+      next();
+    }
+  }
 }
 
 module.exports = new AuthMiddleware();

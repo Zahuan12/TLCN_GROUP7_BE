@@ -12,8 +12,8 @@ router.get("/", CareerPathController.getAll);
 // Protected routes with specific paths (MUST be before /:id)
 router.get("/my-courses", AuthMiddleware.verifyToken, RoleMiddleware.checkRole(["COMPANY", "ADMIN"]), CareerPathController.getMyCourses);
 
-// Public route with ID param (AFTER specific paths)
-router.get("/:id", CareerPathController.getById); // chi tiết CareerPath kèm lessons + final test (public hoặc owner)
+// Public route with ID param (AFTER specific paths) - optionalToken để check ownership
+router.get("/:id", AuthMiddleware.optionalToken, CareerPathController.getById); // chi tiết CareerPath kèm lessons + final test (public hoặc owner)
 
 // Protected CRUD operations
 router.use(AuthMiddleware.verifyToken);
