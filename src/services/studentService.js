@@ -128,7 +128,7 @@ async checkCareerPathCompletion(studentId, careerPathId) {
       include: [
         {
           model: db.CareerPath,
-          as: 'CareerPath'
+          as: 'careerPath'
         }
       ]
     });
@@ -170,11 +170,11 @@ async checkCareerPathCompletion(studentId, careerPathId) {
       include: [
         {
           model: db.CareerPath,
-          as: 'CareerPath',
+          as: 'careerPath',
           include: [
             {
               model: db.Company,
-              as: 'Company',
+              as: 'company',
               attributes: ['id', 'companyName', 'logo']
             }
           ]
@@ -187,7 +187,7 @@ async checkCareerPathCompletion(studentId, careerPathId) {
       progressId: progress.id,
       status: progress.status,
       enrolledAt: progress.createdAt,
-      course: progress.CareerPath
+      course: progress.careerPath
     }));
   }
    
