@@ -73,6 +73,7 @@ class AuthService {
   }
   async loginWithGoogle(googleData) {
     let user = await db.User.findOne({ where: { email: googleData.email } });
+    let isNewUser = false;
 
     if (!user) {
       user = await db.User.create({
@@ -80,6 +81,7 @@ class AuthService {
         fullName: googleData.fullName,
         role: 'STUDENT', // default hoặc để FE chọn role sau
       });
+      isNewUser = true;
     }
 
     // Kiểm tra hoặc tạo AuthProvider
@@ -93,6 +95,18 @@ class AuthService {
         providerId: googleData.providerId,
         userId: user.id
       });
+    }
+
+    // Tạo Student record nếu user mới và role là STUDENT
+    if (isNewUser && user.role === 'STUDENT') {
+      const existingStudent = await db.Student.findOne({ where: { userId: user.id } });
+      if (!existingStudent) {
+        await db.Student.create({
+          userId: user.id,
+          major: null,
+          school: null
+        });
+      }
     }
 
     // Kiểm tra refreshToken hiện tại trong DB (nếu có)
@@ -218,6 +232,14 @@ class AuthService {
       email: user.email,
       username: user.username,
     };
+  }
+
+  async getUserById(userId) {
+    const user = await db.User.findByPk(userId, {
+      attributes: ['id', 'username', 'email', 'fullName', 'role', 'isActive']
+    });
+    if (!user) throw new Error('Người dùng không tồn tại');
+    return user;
   }
 }
 

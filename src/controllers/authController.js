@@ -34,23 +34,45 @@ class AuthController {
     }
   }
 
+  async getCurrentUser(req, res) {
+    try {
+      const userId = req.user.id;
+      const user = await authService.getUserById(userId);
+      return ApiResponse.success(res, 'Lấy thông tin user thành công', { user });
+    } catch (error) {
+      return ApiResponse.error(res, error.message, 404);
+    }
+  }
+
    async googleCallback(req, res) {
   try {
+    console.log('[googleCallback] === START ===');
+    console.log('[googleCallback] req.user:', req.user);
+    
     const googleData = req.user;
-    console.log("GOOGLE USER:", req.user);
+    
+    if (!googleData) {
+      console.error('[googleCallback] ERROR: No user data from Google');
+      throw new Error("No user data from Google");
+    }
+
+    console.log('[googleCallback] Calling loginWithGoogle...');
     const result = await authService.loginWithGoogle(googleData);
+    console.log('[googleCallback] Login success, tokens generated');
 
     if (!process.env.FRONTEND_URL) {
+      console.error('[googleCallback] ERROR: FRONTEND_URL not set');
       throw new Error("FRONTEND_URL is not set in environment variables");
     }
 
     const redirectUrl = `${process.env.FRONTEND_URL}/oauth-success` +
       `?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
     
+    console.log('[googleCallback] Redirecting to:', redirectUrl);
     return res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Google login callback error:", error.message);
-    return res.redirect(`${process.env.FRONTEND_URL || ''}/login?error=oauth_failed`);
+    console.error("[googleCallback] FATAL ERROR:", error);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/?error=oauth_failed`);
   }
 }
 
