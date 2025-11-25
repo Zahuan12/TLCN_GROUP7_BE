@@ -7,24 +7,36 @@ class StudentService {
   }
 
  async joinCareerPath(studentId, careerPathId) {
-
-
-    // Kiểm tra careerPath (vì careerPath luôn có companyId)
+    // Kiểm tra careerPath
     const careerPath = await db.CareerPath.findByPk(careerPathId);
     if (!careerPath) throw new Error("Career path not found");
 
     // Kiểm tra đã tham gia chưa
-    const exists = await db.StudentProgress.findOne({
+    let progress = await db.StudentProgress.findOne({
       where: { studentId, careerPathId }
     });
-    if (exists) throw new Error("You have already joined this career path");
 
-    // Tạo progress
-    return await db.StudentProgress.create({
+    // Nếu đã join rồi thì trả về progress hiện tại
+    if (progress) {
+      return {
+        progress,
+        message: "You have already joined this career path",
+        alreadyJoined: true
+      };
+    }
+
+    // Tạo progress mới
+    progress = await db.StudentProgress.create({
       studentId,
       careerPathId,
       status: "IN_PROGRESS"
     });
+
+    return {
+      progress,
+      message: "Successfully joined career path",
+      alreadyJoined: false
+    };
   }
 
   async submitTest(studentId, testId, score) {
