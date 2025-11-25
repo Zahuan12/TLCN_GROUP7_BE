@@ -119,11 +119,30 @@ OUTPUT FORMAT (JSON):
   }
 
   /**
-   * Parse test content from JSON
+   * Parse test content from JSON or TEXT
    */
   parseTestContent(content) {
+    // Nếu content là TEXT (không phải JSON) - format mới
     if (typeof content === 'string') {
-      return JSON.parse(content);
+      // Thử parse JSON (format cũ)
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+          return parsed;
+        }
+      } catch (e) {
+        // Không phải JSON, là TEXT thuần - tạo structure đơn giản
+        return {
+          questions: [{
+            id: '1',
+            type: 'essay',
+            question: 'Câu hỏi tổng hợp',
+            points: 100,
+            rubric: 'Đánh giá toàn bộ bài làm dựa trên đề bài'
+          }],
+          testContent: content // Lưu đề bài TEXT gốc
+        };
+      }
     }
     return content;
   }
@@ -135,6 +154,15 @@ OUTPUT FORMAT (JSON):
     const questions = testContent.questions || [];
     
     let prompt = `Hãy chấm bài kiểm tra sau:\n\n`;
+    
+    // Nếu có testContent (format TEXT), thêm đề bài gốc
+    if (testContent.testContent) {
+      prompt += `**ĐỀ BÀI:**\n${testContent.testContent}\n\n`;
+      prompt += `**CÂU TRẢ LỜI CỦA HỌC SINH:**\n${studentAnswers[0]?.answer || '(Không có)'}\n\n`;
+      prompt += `Hãy chấm điểm bài làm này dựa trên đề bài trên (thang điểm 100).\n`;
+      return prompt;
+    }
+    
     prompt += `**TỔNG SỐ CÂU HỎI**: ${questions.length}\n\n`;
 
     questions.forEach((q, index) => {
