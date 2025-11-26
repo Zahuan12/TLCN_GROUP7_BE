@@ -70,6 +70,20 @@ async getAll(req, res) {
   }
 }
 
+  async updateAvatar(req, res) {
+    try {
+      if (!req.file) {
+        return ApiResponse.error(res, 'Không có file avatar được upload', 400);
+      }
+
+      const updatedUser = await UserService.updateAvatar(req.params.id, req.file.buffer);
+      
+      return ApiResponse.success(res, 'Cập nhật avatar thành công', updatedUser);
+    } catch (error) {
+      console.error('[UserController.updateAvatar]', error);
+      return ApiResponse.error(res, error.message || 'Không thể cập nhật avatar', 400);
+    }
+  }
 
 }
 

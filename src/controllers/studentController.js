@@ -120,6 +120,25 @@ class StudentController {
         return ApiResponse.error(res, error.message || "Không cập nhật được hồ sơ", 400);
       }
     }
+
+    async getTestResultDetail(req, res) {
+      try {
+        const userId = req.user.id;
+        const { testResultId } = req.params;
+
+        // Lấy Student record từ userId
+        const student = await studentService.getStudentByUserId(userId);
+        if (!student) {
+          return ApiResponse.error(res, "Student không tồn tại", 404);
+        }
+
+        const testResult = await studentService.getTestResultDetail(student.id, testResultId);
+        return ApiResponse.success(res, "Lấy chi tiết test result thành công", testResult);
+      } catch (error) {
+        console.error("[StudentController.getTestResultDetail]", error);
+        return ApiResponse.error(res, error.message || "Không lấy được chi tiết test result", 400);
+      }
+    }
 }
 
 module.exports = new StudentController();

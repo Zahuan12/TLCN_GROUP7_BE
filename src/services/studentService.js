@@ -175,7 +175,7 @@ async checkCareerPathCompletion(studentId, careerPathId) {
             {
               model: db.Company,
               as: 'company',
-              attributes: ['id', 'companyName', 'logo']
+              attributes: ['id', 'companyName']
             }
           ]
         }
@@ -183,14 +183,75 @@ async checkCareerPathCompletion(studentId, careerPathId) {
       order: [['createdAt', 'DESC']]
     });
 
-    return enrolledCourses.map(progress => ({
-      progressId: progress.id,
-      status: progress.status,
-      enrolledAt: progress.createdAt,
-      course: progress.careerPath
+    // Lấy test results cho từng course
+    const result = await Promise.all(enrolledCourses.map(async (progress) => {
+      const testResults = await db.StudentTestResult.findAll({
+        where: { studentId: student.id },
+        include: [
+          {
+            model: db.Test,
+            as: 'test',
+            where: {
+              [db.Sequelize.Op.or]: [
+                { careerPathId: progress.careerPathId },
+                { lessonId: { [db.Sequelize.Op.ne]: null } }
+              ]
+            },
+            required: true,
+            include: [
+              {
+                model: db.Lesson,
+                as: 'lesson',
+                where: { careerPathId: progress.careerPathId },
+                required: false
+              }
+            ]
+          }
+        ]
+      });
+
+      return {
+        progressId: progress.id,
+        status: progress.status,
+        enrolledAt: progress.createdAt,
+        course: progress.careerPath,
+        testResults: testResults.map(tr => ({
+          testId: tr.testId,
+          score: tr.score,
+          testTitle: tr.test.title,
+          testType: tr.test.type,
+          completedAt: tr.updatedAt
+        }))
+      };
     }));
+
+    return result;
   }
    
+  async getTestResultDetail(studentId, testResultId) {
+    const testResult = await db.StudentTestResult.findOne({
+      where: { id: testResultId, studentId },
+      include: [
+        {
+          model: db.Test,
+          as: 'test',
+          include: [
+            {
+              model: db.Lesson,
+              as: 'lesson'
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!testResult) {
+      throw new Error("Test result không tồn tại");
+    }
+
+    return testResult;
+  }
+
   async updateProfile(userId, data) {
     const student = await db.Student.findOne({ where: { userId } });
     if (!student) throw new Error("Student không tồn tại");

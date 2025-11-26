@@ -157,6 +157,9 @@ module.exports = {
   // Blog upload: accept multiple images with same field name
   uploadBlogImages: [upload.array('images', 10), debugUpload],
   
+  // Single file upload: for avatar, profile image, etc
+  uploadSingle: (fieldName) => [upload.single(fieldName), debugUpload],
+  
   // Flexible mode: chấp nhận bất kỳ field name nào (tối đa 15 files)
   uploadAny: [upload.any(), debugUpload],
   

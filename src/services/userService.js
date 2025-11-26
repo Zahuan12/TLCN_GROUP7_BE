@@ -90,9 +90,56 @@ class UserService {
     const user = await db.User.findByPk(id);
     if (!user) throw new Error('Không tìm thấy user');
 
-    const { email, username, fullName, role, isActive } = data;
+    const updateData = {};
+    const allowedFields = ['email', 'username', 'fullName', 'role', 'isActive', 'avatar', 'address'];
+    
+    allowedFields.forEach(field => {
+      if (data[field] !== undefined) {
+        updateData[field] = data[field];
+      }
+    });
 
-    await user.update({ email, username, fullName, role, isActive });
+    if (Object.keys(updateData).length > 0) {
+      await user.update(updateData);
+    }
+
+    return user;
+  }
+
+  async updateAvatar(userId, fileBuffer) {
+    const user = await db.User.findByPk(userId);
+    if (!user) throw new Error('Không tìm thấy user');
+
+    const cloudinary = require('../configs/cloudinary');
+    const streamifier = require('streamifier');
+
+    // Upload to Cloudinary với timeout và optimize
+    const uploadPromise = new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Upload timeout'));
+      }, 15000); // 15s timeout
+
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'avatars',
+          transformation: [
+            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+            { quality: 'auto:low', fetch_format: 'auto' }
+          ],
+          resource_type: 'image'
+        },
+        (error, result) => {
+          clearTimeout(timeoutId);
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+
+      streamifier.createReadStream(fileBuffer).pipe(stream);
+    });
+
+    const result = await uploadPromise;
+    await user.update({ avatar: result.secure_url });
 
     return user;
   }
