@@ -132,7 +132,7 @@ class BlogService {
     order: [['createdAt', 'DESC']],
     include: [
       { model: db.BlogMedia, as: 'media' },
-      { model: db.User, as: 'author', attributes: ['id', 'username'] }
+      { model: db.User, as: 'author', attributes: ['id', 'username','avatar'] }
     ]
   });
 

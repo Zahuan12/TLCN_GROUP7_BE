@@ -6,6 +6,34 @@ class commentController {
             const userId = req.user.id;
             const { blogId, content, parentId } = req.body;
             const newComment = await commentService.createComment(blogId, userId, content, parentId);
+            
+            // Emit socket notification
+            const io = req.app.get('io');
+            if (io) {
+                // Get blog author and parent comment author
+                const blog = await require('../models').Blog.findByPk(blogId);
+                let parentCommentAuthorId = null;
+                
+                if (parentId) {
+                    const parentComment = await require('../models').Comment.findByPk(parentId);
+                    parentCommentAuthorId = parentComment?.authorId;
+                }
+                
+                // Notify
+                io.to(`user_${blog?.authorId}`).emit('newComment', {
+                    type: parentId ? 'COMMENT_REPLY' : 'NEW_COMMENT',
+                    comment: newComment,
+                    blog: { id: blog?.id, title: blog?.title }
+                });
+                
+                if (parentCommentAuthorId && parentCommentAuthorId !== userId) {
+                    io.to(`user_${parentCommentAuthorId}`).emit('newComment', {
+                        type: 'COMMENT_REPLY',
+                        comment: newComment
+                    });
+                }
+            }
+            
             return ApiResponse.success(res, 'Tạo comment thành công', newComment);
         } catch (error) {
             return ApiResponse.error(res, error.message || 'Tạo comment thất bại', 400);
