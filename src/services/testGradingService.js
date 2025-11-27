@@ -50,29 +50,40 @@ QUAN TRỌNG - CHẾ ĐỘ CHẤM ĐIỂM:
 - Essay: Đánh giá theo tiêu chí (nội dung, logic, trình bày) cho điểm 0-100%
 - Coding: Đánh giá đa tiêu chí (xem hướng dẫn bên dưới)
 
-ĐỐI VỚI BÀI CODE (type: 'coding'):
-1. PHÂN TÍCH LOGIC (40%):
-   - Thuật toán có đúng không?
+ĐỐI VỚI BÀI CODE (type: 'coding' hoặc bài yêu cầu code):
+1. PHÂN TÍCH LOGIC & TÍNH ĐÚNG ĐẮN (50%):
+   - Thuật toán có đúng với yêu cầu đề bài không?
    - Xử lý đầu vào/đầu ra có chính xác?
-   - Logic có rõ ràng, dễ hiểu?
+   - Logic rõ ràng, dễ hiểu?
+   - Code có thể chạy được không (syntax)?
+   - Xử lý edge cases (null, empty, negative, v.v.)
 
 2. KIỂM TRA TEST CASES (30%):
-   - Chạy qua từng test case trong đề bài
-   - Kiểm tra input/output có khớp không?
-   - Xử lý edge cases có đúng?
+   - MÔ PHỎNG chạy code với từng test case trong đề bài
+   - So sánh output thực tế với expected output
+   - Kiểm tra xem code có pass hết test cases không
+   - QUAN TRỌNG: Nếu code có lỗi cú pháp nghiêm trọng → KHÔNG THỂ pass test cases
+   - Nếu code không liên quan đến đề bài → 0 điểm
 
-3. CHẤT LƯỢNG CODE (30%):
-   - Code có sạch, dễ đọc?
-   - Có comments, tên biến rõ ràng?
-   - Có tối ưu về hiệu suất?
-   - Xử lý lỗi có tốt?
+3. CHẤT LƯỢNG CODE (20%):
+   - Code sạch, dễ đọc, có comments hợp lý
+   - Tên biến/hàm rõ ràng, có ý nghĩa
+   - Tối ưu về hiệu suất (complexity)
+   - Xử lý lỗi tốt
 
-HƯỚNG DẪN CHẤM ĐIỂM CODE:
-- Code đúng logic nhưng có lỗi cú pháp nhỏ: 70-80%
-- Code pass tất cả test cases: tối thiểu 80%
-- Code pass tests + clean + tối ưu: 90-100%
-- Code sai logic hoặc không chạy: 0-30%
-- Code đúng một phần: 40-70% tùy mức độ
+HƯỚNG DẪN CHẤM ĐIỂM CODE (QUAN TRỌNG):
+- Code KHÔNG LIÊN QUAN đến đề bài (VD: hỏi về Trái Đất mà code tính tổng): 0-5%
+- Code SAI HOÀN TOÀN logic hoặc không chạy được: 0-20%
+- Code đúng ý tưởng nhưng sai logic nhiều: 30-50%
+- Code đúng logic nhưng có lỗi cú pháp nhỏ hoặc thiếu edge cases: 60-75%
+- Code pass được NHIỀU test cases nhưng không phải tất cả: 70-85%
+- Code pass TẤT CẢ test cases: 80-95%
+- Code pass tests + clean + tối ưu + xử lý lỗi tốt: 95-100%
+
+LƯU Ý ĐẶC BIỆT:
+- Với câu hỏi yêu cầu code, nếu sinh viên chỉ viết text không phải code → tối đa 10%
+- Nếu code bị lỗi cú pháp nghiêm trọng (thiếu dấu ngoặc, keyword sai) → giảm 20-30%
+- Nếu code đúng ý tưởng nhưng chưa hoàn thiện → 40-60% tùy mức độ
 
 OUTPUT FORMAT (JSON):
 {
@@ -157,9 +168,33 @@ OUTPUT FORMAT (JSON):
     
     // Nếu có testContent (format TEXT), thêm đề bài gốc
     if (testContent.testContent) {
-      prompt += `**ĐỀ BÀI:**\n${testContent.testContent}\n\n`;
-      prompt += `**CÂU TRẢ LỜI CỦA HỌC SINH:**\n${studentAnswers[0]?.answer || '(Không có)'}\n\n`;
-      prompt += `Hãy chấm điểm bài làm này dựa trên đề bài trên (thang điểm 100).\n`;
+      prompt += `**ĐỀ BÀI (Toàn bộ):**\n${testContent.testContent}\n\n`;
+      prompt += `---\n\n`;
+      prompt += `**CÂU TRẢ LỜI/CODE CỦA HỌC SINH:**\n`;
+      const studentAnswer = studentAnswers[0]?.answer || '(Không có câu trả lời)';
+      
+      // Detect if answer looks like code
+      if (studentAnswer.includes('function') || studentAnswer.includes('def ') || 
+          studentAnswer.includes('class ') || studentAnswer.includes('{') ||
+          studentAnswer.includes('const ') || studentAnswer.includes('var ') ||
+          studentAnswer.includes('let ') || studentAnswer.includes('import ')) {
+        prompt += `\`\`\`\n${studentAnswer}\n\`\`\`\n\n`;
+      } else {
+        prompt += `${studentAnswer}\n\n`;
+      }
+      
+      prompt += `---\n\n`;
+      prompt += `**YÊU CẦU CHẤM ĐIỂM:**\n`;
+      prompt += `1. Đọc kỹ đề bài và hiểu yêu cầu\n`;
+      prompt += `2. Phân tích câu trả lời/code của học sinh\n`;
+      prompt += `3. Nếu đề yêu cầu CODE:\n`;
+      prompt += `   - Kiểm tra code có đúng logic không\n`;
+      prompt += `   - Mô phỏng chạy code với test cases (nếu có trong đề)\n`;
+      prompt += `   - Đánh giá chất lượng code\n`;
+      prompt += `   - QUAN TRỌNG: Code không liên quan hoặc sai hoàn toàn → điểm thấp (0-20%)\n`;
+      prompt += `4. Nếu là câu hỏi lý thuyết: đánh giá theo nội dung, logic, độ đầy đủ\n`;
+      prompt += `5. Cho điểm công bằng (thang 100) và nhận xét chi tiết\n\n`;
+      prompt += `Trả về kết quả theo format JSON đã yêu cầu.\n`;
       return prompt;
     }
     
@@ -191,21 +226,22 @@ OUTPUT FORMAT (JSON):
       } else if (q.type === 'coding') {
         prompt += `Ngôn ngữ: ${q.language || 'Không xác định'}\n`;
         if (q.constraints) {
-          prompt += `Ràng buộc: ${q.constraints}\n`;
+          prompt += `Ràng buộc/Yêu cầu: ${q.constraints}\n`;
         }
         if (q.testCases && q.testCases.length > 0) {
-          prompt += `Test cases:\n`;
+          prompt += `\n**Test cases (QUAN TRỌNG - Phải kiểm tra code pass các test này):**\n`;
           q.testCases.forEach((tc, i) => {
-            prompt += `  Test ${i + 1}:\n`;
+            prompt += `  Test case ${i + 1}:\n`;
             prompt += `    Input: ${JSON.stringify(tc.input)}\n`;
             prompt += `    Expected Output: ${JSON.stringify(tc.output)}\n`;
             if (tc.explanation) {
-              prompt += `    Giải thích: ${tc.explanation}\n`;
+              prompt += `    Mô tả: ${tc.explanation}\n`;
             }
+            prompt += `    → Hãy MÔ PHỎNG chạy code của học sinh với input này và kiểm tra output\n`;
           });
         }
         if (q.sampleCode) {
-          prompt += `Sample code:\n\`\`\`${q.language || ''}\n${q.sampleCode}\n\`\`\`\n`;
+          prompt += `\nSample code template:\n\`\`\`${q.language || ''}\n${q.sampleCode}\n\`\`\`\n`;
         }
       }
 

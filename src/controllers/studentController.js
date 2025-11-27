@@ -33,10 +33,10 @@ class StudentController {
   async submitTest(req, res) {
     try {
       const userId = req.user.id;
-      const { testId, score } = req.body;
+      const { testId, answers } = req.body;
 
-      if (!testId || score === undefined) {
-        return ApiResponse.error(res, "Thiếu testId hoặc score", 400);
+      if (!testId || !answers || !Array.isArray(answers)) {
+        return ApiResponse.error(res, "Thiếu testId hoặc answers", 400);
       }
 
       // Lấy Student record từ userId
@@ -45,7 +45,7 @@ class StudentController {
         return ApiResponse.error(res, "Student không tồn tại", 404);
       }
 
-      const result = await studentService.submitTest(student.id, testId, score);
+      const result = await studentService.submitTest(student.id, testId, answers);
 
       return ApiResponse.success(res, "Nộp bài test thành công", result, 201);
     } catch (error) {

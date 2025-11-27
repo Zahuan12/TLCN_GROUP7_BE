@@ -39,7 +39,8 @@ class StudentService {
     };
   }
 
-  async submitTest(studentId, testId, score) {
+  async submitTest(studentId, testId, answers) {
+    const testGradingService = require('./testGradingService');
 
     const test = await db.Test.findByPk(testId);
     if (!test) throw new Error("Test not found");
@@ -62,25 +63,50 @@ class StudentService {
     if (!progress)
       throw new Error("You must join this career path first");
 
-    // 3) Lưu bài test
+    // 3) Gọi AI chấm điểm
+    console.log('[StudentService] Grading test with AI...');
+    const gradingResult = await testGradingService.gradeTest(testId, studentId, answers);
+    
+    const score = gradingResult.score || 0;
+    const passed = score >= 60; // Pass threshold: 60%
+
+    console.log('[StudentService] Grading result:', { score, passed });
+
+    // 4) Lưu kết quả vào DB
     let existing = await db.StudentTestResult.findOne({
       where: { studentId, testId }
     });
 
+    const testResultData = {
+      score,
+      passed,
+      answers: answers, // JSON type, không cần stringify
+      feedback: gradingResult.feedback,
+      aiGrading: gradingResult, // JSON type, không cần stringify
+      completedAt: new Date()
+    };
+
     if (existing) {
-      await existing.update({ score });
+      await existing.update(testResultData);
     } else {
       await db.StudentTestResult.create({
         studentId,
         testId,
-        score
+        ...testResultData
       });
     }
 
-    // 4) Kiểm tra xem học sinh hoàn thành CareerPath chưa
+    // 5) Kiểm tra xem học sinh hoàn thành CareerPath chưa
     await this.checkCareerPathCompletion(studentId, careerPathId);
 
-    return { message: "Test submitted successfully" };
+    return {
+      message: "Test submitted successfully",
+      score,
+      passed,
+      feedback: gradingResult.feedback,
+      suggestions: gradingResult.suggestions,
+      details: gradingResult.details
+    };
   }
 
   async checkCareerPathCompletion(studentId, careerPathId) {

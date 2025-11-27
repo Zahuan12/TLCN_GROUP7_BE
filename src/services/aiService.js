@@ -1,10 +1,88 @@
 const groqClient = require('../configs/groqClient');
+const cohereClient = require('../configs/cohereClient');
 const db = require('../models');
+const { Op } = require('sequelize');
 
 class AIService {
   /**
-   * Build student context from their learning progress
+   * Generate text embedding using Cohere API
+   * @param {string|string[]} texts - Single text or array of texts to embed
+   * @returns {Promise<number[]|number[][]>} - Embedding vector(s)
    */
+  async getEmbedding(texts) {
+    try {
+      const isArray = Array.isArray(texts);
+      const textsToEmbed = isArray ? texts : [texts];
+
+      const response = await cohereClient.embed({
+        texts: textsToEmbed,
+        model: 'embed-multilingual-v3.0', // Best for Vietnamese
+        inputType: 'search_query' // or 'search_document', 'classification', 'clustering'
+      });
+
+      return isArray ? response.embeddings : response.embeddings[0];
+    } catch (error) {
+      console.error('[AIService.getEmbedding] Error:', error.message);
+      throw new Error('Failed to generate embedding: ' + error.message);
+    }
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors
+   * @param {number[]} vecA - First vector
+   * @param {number[]} vecB - Second vector
+   * @returns {number} - Similarity score (0-1, higher = more similar)
+   */
+  cosineSimilarity(vecA, vecB) {
+    if (vecA.length !== vecB.length) {
+      throw new Error('Vectors must have the same length');
+    }
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
+  /**
+   * Find most similar text from a list using embeddings
+   * @param {string} query - Query text
+   * @param {string[]} candidates - List of candidate texts
+   * @param {number} threshold - Minimum similarity score (default 0.7)
+   * @returns {Promise<Array<{text: string, similarity: number}>>}
+   */
+  async findSimilarTexts(query, candidates, threshold = 0.7) {
+    try {
+      // Get embeddings for query and all candidates
+      const allTexts = [query, ...candidates];
+      const embeddings = await this.getEmbedding(allTexts);
+
+      const queryEmbedding = embeddings[0];
+      const candidateEmbeddings = embeddings.slice(1);
+
+      // Calculate similarities
+      const results = candidates.map((text, idx) => ({
+        text,
+        similarity: this.cosineSimilarity(queryEmbedding, candidateEmbeddings[idx])
+      }));
+
+      // Filter by threshold and sort by similarity
+      return results
+        .filter(r => r.similarity >= threshold)
+        .sort((a, b) => b.similarity - a.similarity);
+    } catch (error) {
+      console.error('[AIService.findSimilarTexts] Error:', error.message);
+      throw error;
+    }
+  }
+
   async buildStudentContext(studentId) {
     try {
       // Get student info
@@ -94,9 +172,6 @@ class AIService {
     }
   }
 
-  /**
-   * Build system prompt with student context
-   */
   buildSystemPrompt(studentContext) {
     return `Bạn là một trợ lý AI thông minh cho nền tảng học tập trực tuyến, chuyên hỗ trợ sinh viên về các vấn đề học tập, định hướng nghề nghiệp và phát triển kỹ năng.
 
@@ -113,7 +188,12 @@ NHIỆM VỤ CỦA BẠN:
 3. Động viên và khích lệ sinh viên khi gặp khó khăn
 4. Gợi ý các khóa học phù hợp hoặc cách cải thiện kết quả học tập
 5. Giải đáp thắc mắc về định hướng nghề nghiệp
-6. KHI SINH VIÊN HỎI VỀ KHÓA HỌC CÓ SẴN: Sử dụng function search_courses để tìm kiếm và giới thiệu các khóa học thực tế trên nền tảng
+
+LƯU Ý VỀ FUNCTION CALLING:
+- CHỈ dùng function search_courses khi sinh viên HỎI RÕ RÀNG: "có khóa học nào về...", "tìm khóa học...", "khóa học ... ở đâu"
+- KHÔNG dùng function cho câu hỏi chung như: "làm sao học...", "học gì trước", "bắt đầu học như thế nào"
+- Nếu dùng function, KHÔNG viết text trước khi call function
+- Nếu KHÔNG dùng function, trả lời trực tiếp bằng text
 
 PHONG CÁCH GIAO TIẾP:
 - Thân thiện, nhiệt tình và dễ hiểu
@@ -123,23 +203,20 @@ PHONG CÁCH GIAO TIẾP:
 - Luôn dựa trên dữ liệu thực tế của sinh viên để đưa ra lời khuyên
 
 GIỚI HẠN VÀ RANH GIỚI:
-- KHÔNG trả lời các câu hỏi về chính trị, tôn giáo, bạo lực, nội dung 18+, phân biệt chủng tộc
+- CHỈ trả lời các câu hỏi liên quan đến: học tập, khóa học, lập trình, coding, định hướng nghề nghiệp IT, phát triển kỹ năng lập trình, career path trong IT
+- KHÔNG trả lời các chủ đề ngoài học tập: chính trị, tôn giáo, bạo lực, nội dung 18+, phân biệt chủng tộc, tin tức, thể thao, giải trí (phim, nhạc, game), thời tiết, ẩm thực, du lịch, mua sắm, tình yêu, sức khỏe, pháp lý, tài chính
 - KHÔNG cung cấp lời khuyên y tế, pháp lý hoặc tài chính cá nhân
 - KHÔNG giúp làm bài tập hoặc gian lận trong thi cử
 - TUYỆT ĐỐI KHÔNG tiết lộ bất kỳ thông tin kỹ thuật nào về hệ thống: API keys, tokens, passwords, database credentials, server config, source code, environment variables
 - KHÔNG trả lời câu hỏi về cấu trúc database, bảng, trường dữ liệu, query SQL
 - KHÔNG cung cấp thông tin về kiến trúc hệ thống, deployment, hosting, backend logic
 - Nếu bị hỏi về thông tin kỹ thuật/bảo mật: "Tôi không có quyền truy cập hoặc chia sẻ thông tin kỹ thuật của hệ thống. Vui lòng liên hệ bộ phận IT nếu bạn cần hỗ trợ kỹ thuật."
-- Nếu được hỏi những câu hỏi không phù hợp, lịch sự từ chối và hướng về chủ đề học tập
-- Ví dụ: "Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến học tập và phát triển kỹ năng. Bạn có câu hỏi gì về khóa học hoặc lộ trình học của mình không?"`;
+- Nếu được hỏi câu hỏi không liên quan học tập/nghề nghiệp: "Xin lỗi, tôi chỉ có thể hỗ trợ các câu hỏi liên quan đến học tập, khóa học, lập trình và phát triển nghề nghiệp. Bạn có câu hỏi gì về quá trình học tập của mình không?"`;
   }
 
-  /**
-   * Search for career paths/courses based on user query
-   */
+
   async searchCourses(query) {
     try {
-      const { Op } = require('sequelize');
       
       const courses = await db.CareerPath.findAll({
         where: {
@@ -174,9 +251,6 @@ GIỚI HẠN VÀ RANH GIỚI:
     }
   }
 
-  /**
-   * Check if message contains security-sensitive keywords
-   */
   isSecuritySensitiveQuery(message) {
     const sensitiveKeywords = [
       // Security & Auth
@@ -199,83 +273,253 @@ GIỚI HẠN VÀ RANH GIỚI:
     const lowerMessage = message.toLowerCase();
     return sensitiveKeywords.some(keyword => lowerMessage.includes(keyword));
   }
-
   /**
-   * Chat with AI with function calling support
+   * Use semantic embeddings to classify if query is off-topic
+   * Much more accurate than keyword matching, handles context and no-diacritics text
    */
+  async isOffTopicQuery(message) {
+    try {
+      const lowerMessage = message.toLowerCase();
+      
+      // Fast keyword pre-filter for obvious cases
+      const obviousOffTopicKeywords = [
+        'trái đất', 'trai dat', 'mặt trời', 'mat troi', 'mặt trăng', 'mat trang',
+        'vũ trụ', 'vu tru', 'hành tinh', 'hanh tinh',
+        'phim', 'nhạc', 'nhac', 'game', 'bóng đá', 'bong da', 'thể thao', 'the thao',
+        'món ăn', 'mon an', 'nhà hàng', 'nha hang', 'du lịch', 'du lich',
+        'thời tiết', 'thoi tiet', 'tình yêu', 'tinh yeu', 'người yêu', 'nguoi yeu',
+        'hẹn hò', 'hen ho', 'chia tay',
+        'youtube', 'tiktok', 'facebook', 'instagram',
+        'world cup', 'olympic', 'tin tức', 'tin tuc', 'thời sự', 'thoi su',
+        'chiến tranh', 'chien tranh', 'chính trị', 'chinh tri', 'bầu cử', 'bau cu'
+      ];
+      
+      const hasObviousOffTopic = obviousOffTopicKeywords.some(keyword => 
+        lowerMessage.includes(keyword)
+      );
+
+      // If contains learning keywords, likely on-topic
+      const learningKeywords = [
+        'học', 'hoc', 'khóa học', 'khoa hoc', 'course', 
+        'bài tập', 'bai tap', 'test', 'kiểm tra', 'kiem tra',
+        'lập trình', 'lap trinh', 'code', 'coding', 'programming',
+        'career', 'nghề', 'nghe', 'kỹ năng', 'ky nang', 'skill',
+        'tiến độ', 'tien do', 'progress', 'lesson', 'bài học', 'bai hoc',
+        'chương trình', 'chuong trinh', 'công việc', 'cong viec', 'assignment',
+        'javascript', 'python', 'java', 'react', 'angular', 'node', 'typescript'
+      ];
+      
+      const hasLearningKeywords = learningKeywords.some(keyword => 
+        lowerMessage.includes(keyword)
+      );
+
+      // If has learning keywords, it's on-topic
+      if (hasLearningKeywords) {
+        return false;
+      }
+
+      // If has obvious off-topic keywords and no learning context, it's off-topic
+      if (hasObviousOffTopic) {
+        return true;
+      }
+
+      // For ambiguous cases, use semantic similarity with Cohere embeddings
+      // Cohere handles Vietnamese with/without diacritics automatically
+      const onTopicExamples = [
+        'Làm sao để học lập trình hiệu quả?',
+        'Khóa học Java có khó không?',
+        'React hay Angular tốt hơn?',
+        'Tôi nên học Python hay JavaScript trước?',
+        'Cách debug code hiệu quả',
+        'Career path cho lập trình viên',
+        'Học machine learning cần gì?',
+        'Bài tập về thuật toán',
+        'Test API như thế nào?',
+        'Framework nào phù hợp với dự án?'
+      ];
+
+      const offTopicExamples = [
+        'Trái đất có hình gì?',
+        'Phim Marvel nào hay nhất?',
+        'Bóng đá hôm nay có gì?',
+        'Món ăn ngon ở Hà Nội',
+        'Thời tiết hôm nay thế nào?',
+        'Người yêu tôi tức giận phải làm sao?',
+        'Game nào hay để chơi?',
+        'Du lịch Đà Lạt tháng mấy đẹp?',
+        'Mua điện thoại gì tốt?',
+        'Ca sĩ nào đang hot?'
+      ];
+
+      // Get embeddings - Cohere automatically handles text normalization
+      const allTexts = [message, ...onTopicExamples, ...offTopicExamples];
+      const embeddings = await this.getEmbedding(allTexts);
+
+      const queryEmbedding = embeddings[0];
+      const onTopicEmbeddings = embeddings.slice(1, 1 + onTopicExamples.length);
+      const offTopicEmbeddings = embeddings.slice(1 + onTopicExamples.length);
+
+      // Calculate average similarity to on-topic and off-topic examples
+      const avgOnTopicSimilarity = onTopicEmbeddings.reduce((sum, emb) => 
+        sum + this.cosineSimilarity(queryEmbedding, emb), 0
+      ) / onTopicEmbeddings.length;
+
+      const avgOffTopicSimilarity = offTopicEmbeddings.reduce((sum, emb) => 
+        sum + this.cosineSimilarity(queryEmbedding, emb), 0
+      ) / offTopicEmbeddings.length;
+
+      // If more similar to off-topic examples, it's off-topic
+      return avgOffTopicSimilarity > avgOnTopicSimilarity;
+
+    } catch (error) {
+      console.error('[AIService.isOffTopicQuery] Error:', error.message);
+      // Fallback to keyword-based detection on error
+      const lowerMessage = message.toLowerCase();
+      const offTopicKeywords = [
+        'trái đất', 'trai dat', 'phim', 'nhạc', 'nhac', 
+        'bóng đá', 'bong da', 'món ăn', 'mon an', 
+        'thời tiết', 'thoi tiet', 'tình yêu', 'tinh yeu'
+      ];
+      return offTopicKeywords.some(keyword => lowerMessage.includes(keyword));
+    }
+  }
+
   async chat(messages, studentContext) {
     try {
-      // Check for security-sensitive queries
       const lastMessage = messages[messages.length - 1];
+      
+      // Check for security-sensitive queries
       if (lastMessage && lastMessage.role === 'user' && this.isSecuritySensitiveQuery(lastMessage.content)) {
         return 'Tôi không có quyền truy cập hoặc chia sẻ thông tin kỹ thuật, bảo mật của hệ thống. Tôi chỉ có thể hỗ trợ bạn về các vấn đề học tập, khóa học và phát triển kỹ năng. Bạn có câu hỏi gì về lộ trình học của mình không?';
       }
 
-      const systemPrompt = this.buildSystemPrompt(studentContext);
+      // Check for off-topic queries using AI semantic classification
+      if (lastMessage && lastMessage.role === 'user') {
+        const isOffTopic = await this.isOffTopicQuery(lastMessage.content);
+        if (isOffTopic) {
+          return 'Xin lỗi, tôi chỉ có thể hỗ trợ các câu hỏi liên quan đến học tập, khóa học, lập trình và phát triển nghề nghiệp. Tôi không thể trả lời các câu hỏi về chủ đề khác. Bạn có câu hỏi gì về quá trình học tập hoặc các khóa học trên nền tảng không?';
+        }
+      }
 
-      // First request with function calling
-      const response = await groqClient.post('/chat/completions', {
+      const systemPrompt = this.buildSystemPrompt(studentContext);
+      
+      // Detect if user is asking for specific course search
+      const userMessage = lastMessage?.content?.toLowerCase() || '';
+      const isCourseSearchQuery = 
+        /có khóa học (nào về|về|cho)/i.test(userMessage) ||
+        /tìm khóa học/i.test(userMessage) ||
+        /khóa học .* ở đâu/i.test(userMessage) ||
+        /giới thiệu khóa học/i.test(userMessage) ||
+        /course .* available/i.test(userMessage);
+      
+      // Disable function calling for general "how to learn" questions
+      const isGeneralQuestion =
+        /làm sao (để )?học/i.test(userMessage) ||
+        /bắt đầu học/i.test(userMessage) ||
+        /học .* như thế nào/i.test(userMessage) ||
+        /học gì trước/i.test(userMessage) ||
+        /nên học/i.test(userMessage);
+
+      // First request - with or without function calling
+      const requestConfig = {
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages
         ],
-        tools: [
+        temperature: 0.7,
+        max_tokens: 1024
+      };
+
+      // Only enable function calling for explicit course search queries
+      if (isCourseSearchQuery && !isGeneralQuestion) {
+        requestConfig.tools = [
           {
             type: 'function',
             function: {
               name: 'search_courses',
-              description: 'Tìm kiếm các khóa học/career path phù hợp với yêu cầu của sinh viên. Sử dụng khi sinh viên hỏi về khóa học có sẵn, muốn tìm khóa học theo chủ đề, hoặc cần gợi ý khóa học.',
+              description: 'Tìm kiếm các khóa học/career path phù hợp với yêu cầu của sinh viên. CHỈ sử dụng khi sinh viên HỎI RÕ RÀNG về khóa học có sẵn hoặc muốn tìm khóa học cụ thể.',
               parameters: {
                 type: 'object',
                 properties: {
                   query: {
                     type: 'string',
-                    description: 'Từ khóa tìm kiếm (ví dụ: "java", "frontend", "data science", "backend")'
+                    description: 'Từ khóa tìm kiếm cụ thể (ví dụ: "java", "frontend", "data science", "backend", "python").'
                   }
                 },
                 required: ['query']
               }
             }
           }
-        ],
-        tool_choice: 'auto',
-        temperature: 0.7,
-        max_tokens: 1024
-      });
+        ];
+        requestConfig.tool_choice = 'auto';
+        requestConfig.parallel_tool_calls = false;
+      }
+
+      const response = await groqClient.post('/chat/completions', requestConfig);
 
       const assistantMessage = response.data.choices[0].message;
 
       // Check if AI wants to call function
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-        const toolCall = assistantMessage.tool_calls[0];
-        
-        if (toolCall.function.name === 'search_courses') {
-          const args = JSON.parse(toolCall.function.arguments);
-          const searchResults = await this.searchCourses(args.query);
+        try {
+          const toolCall = assistantMessage.tool_calls[0];
+          
+          if (toolCall.function.name === 'search_courses') {
+            const args = JSON.parse(toolCall.function.arguments);
+            const searchResults = await this.searchCourses(args.query);
 
-          // Second request with function result
-          const finalResponse = await groqClient.post('/chat/completions', {
+            // Second request with function result
+            const finalResponse = await groqClient.post('/chat/completions', {
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                ...messages,
+                assistantMessage,
+                {
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  content: JSON.stringify(searchResults)
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 1024
+            });
+
+            return finalResponse.data.choices[0].message.content;
+          }
+        } catch (funcError) {
+          console.error('[AIService.chat] Function call error:', funcError.message);
+          // If function call fails, return the text content if available
+          if (assistantMessage.content) {
+            return assistantMessage.content;
+          }
+          // Otherwise, generate a response without function calling
+          const fallbackResponse = await groqClient.post('/chat/completions', {
             model: 'llama-3.3-70b-versatile',
             messages: [
               { role: 'system', content: systemPrompt },
-              ...messages,
-              assistantMessage,
-              {
-                role: 'tool',
-                tool_call_id: toolCall.id,
-                content: JSON.stringify(searchResults)
-              }
+              ...messages
             ],
             temperature: 0.7,
             max_tokens: 1024
+            // No tools - just generate text
           });
-
-          return finalResponse.data.choices[0].message.content;
+          return fallbackResponse.data.choices[0].message.content;
         }
       }
 
-      return assistantMessage.content;
+      // Clean up any malformed function syntax in text response
+      let cleanContent = assistantMessage.content || '';
+      
+      // Remove any <function=...> tags that AI might have generated
+      cleanContent = cleanContent.replace(/<function=[\s\S]*?<\/function>/gi, '').trim();
+      
+      // Remove references to function calls in text
+      cleanContent = cleanContent.replace(/Tuy nhiên, tôi không thể tìm kiếm.*?$/i, '').trim();
+      cleanContent = cleanContent.replace(/Nếu bạn muốn tìm kiếm.*?tìm kiếm khóa học trên nền tảng này\./i, '').trim();
+
+      return cleanContent;
     } catch (error) {
       console.error('[AIService.chat] Error:', error.response?.data || error.message);
       throw new Error('Lỗi khi gọi AI: ' + (error.response?.data?.error?.message || error.message));
