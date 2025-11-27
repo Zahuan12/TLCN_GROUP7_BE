@@ -40,6 +40,7 @@ class AuthService {
       fullName: user.fullName,
       username: user.username,
       email: user.email,
+      avatar: user.avatar,
       role: user.role,
       isActive: user.isActive
     };
@@ -149,6 +150,7 @@ class AuthService {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        avatar: user.avatar,
         role: user.role
       }
     };
@@ -236,7 +238,7 @@ class AuthService {
 
   async getUserById(userId) {
     const user = await db.User.findByPk(userId, {
-      attributes: ['id', 'username', 'email', 'fullName', 'role', 'isActive']
+      attributes: ['id', 'username', 'email', 'fullName', 'avatar', 'role', 'isActive']
     });
     if (!user) throw new Error('Người dùng không tồn tại');
     return user;

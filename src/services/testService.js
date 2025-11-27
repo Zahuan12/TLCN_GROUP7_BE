@@ -33,7 +33,7 @@ class TestService {
   async getById(id) {
     const test = await Test.findByPk(id, {
       include: [
-        { model: Lesson, attributes: ["id", "title"] },
+        { model: Lesson, as: 'lesson', attributes: ["id", "title"] },
         { model: CareerPath, attributes: ["id", "title"] }
       ]
     });

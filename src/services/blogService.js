@@ -18,10 +18,10 @@ class BlogService {
 
     // Upload files song song (parallel)
     // Hỗ trợ cả uploadFields (files.images/files.files) và uploadAny (files array)
-    const allFiles = Array.isArray(files) 
-      ? files 
+    const allFiles = Array.isArray(files)
+      ? files
       : [...(files?.images || []), ...(files?.files || [])];
-    
+
     if (allFiles.length === 0) {
       await newBlog.update({ status: 'published' });
       console.log(`[BlogService] Blog created (no files) in ${Date.now() - startTime}ms`);
@@ -35,7 +35,7 @@ class BlogService {
       // Upload tất cả files song song với timeout 30s/file
       const uploadPromises = allFiles.map(async (file, index) => {
         const type = file.fieldname === 'files' ? 'file' : 'image';
-        
+
         // Upload to Cloudinary với timeout
         const uploadResult = await Promise.race([
           new Promise((resolve, reject) => {
@@ -44,6 +44,7 @@ class BlogService {
                 folder: 'blogs',
                 resource_type: type === 'file' ? 'auto' : 'image',
                 transformation: type === 'image' ? [
+                  { width: 1200, crop: 'limit' }, // Resize to max 1200px width (maintain aspect ratio)
                   { quality: 'auto:good' }, // Auto quality optimization
                   { fetch_format: 'auto' }  // Auto format (webp if supported)
                 ] : undefined
@@ -52,7 +53,7 @@ class BlogService {
             );
             stream.end(file.buffer);
           }),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error(`Upload timeout for file ${index + 1}`)), 30000)
           )
         ]);
@@ -73,7 +74,7 @@ class BlogService {
 
       // Đợi tất cả upload xong
       const uploadedData = await Promise.all(uploadPromises);
-      
+
       console.log(`[BlogService] All files uploaded in ${Date.now() - uploadStartTime}ms`);
 
       // Batch create media records (nhanh hơn từng cái)
@@ -89,21 +90,21 @@ class BlogService {
     } catch (error) {
       // Rollback: delete blog and uploaded media if error
       console.error('[BlogService.createBlog] Upload error:', error);
-      
+
       // Delete uploaded media from Cloudinary
       const uploadedMedia = await db.BlogMedia.findAll({ where: { blogId: newBlog.id } });
       const cleanupPromises = uploadedMedia
         .filter(m => m.publicId)
-        .map(media => 
-          cloudinary.uploader.destroy(media.publicId, { 
-            resource_type: media.type === 'file' ? 'raw' : 'image' 
+        .map(media =>
+          cloudinary.uploader.destroy(media.publicId, {
+            resource_type: media.type === 'file' ? 'raw' : 'image'
           }).catch(err => console.error('[BlogService] Cleanup error:', err))
         );
-      
+
       await Promise.all(cleanupPromises);
       await db.BlogMedia.destroy({ where: { blogId: newBlog.id } });
       await newBlog.destroy();
-      
+
       throw new Error('Lỗi upload media: ' + error.message);
     }
 
@@ -117,32 +118,32 @@ class BlogService {
   }
 
   // Lấy danh sách blog
- async getAllBlogs(page = 1, limit = 10) {
-  const offset = (page - 1) * limit;
+  async getAllBlogs(page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
 
-  // 1. Query nhẹ chỉ để lấy count
-  const total = await db.Blog.count({
-    where: { deletedAt: null }
-  });
+    // 1. Query nhẹ chỉ để lấy count
+    const total = await db.Blog.count({
+      where: { deletedAt: null }
+    });
 
-  // 2. Query dữ liệu riêng
-  const blogs = await db.Blog.findAll({
-    offset,
-    limit,
-    order: [['createdAt', 'DESC']],
-    include: [
-      { model: db.BlogMedia, as: 'media' },
-      { model: db.User, as: 'author', attributes: ['id', 'username'] }
-    ]
-  });
+    // 2. Query dữ liệu riêng
+    const blogs = await db.Blog.findAll({
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']],
+      include: [
+        { model: db.BlogMedia, as: 'media' },
+        { model: db.User, as: 'author', attributes: ['id', 'username', 'avatar'] }
+      ]
+    });
 
-  return {
-    total,
-    blogs,
-    currentPage: page,
-    totalPages: Math.ceil(total / limit)
-  };
-}
+    return {
+      total,
+      blogs,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
 
   // Lấy blog theo ID
   async getBlogById(id) {
@@ -172,10 +173,10 @@ class BlogService {
 
     // Xử lý upload file mới song song
     // Hỗ trợ cả uploadFields và uploadAny
-    const allFiles = Array.isArray(files) 
-      ? files 
+    const allFiles = Array.isArray(files)
+      ? files
       : [...(files?.images || []), ...(files?.files || [])];
-    
+
     if (allFiles.length > 0) {
       try {
         console.log(`[BlogService] Updating blog with ${allFiles.length} new files...`);
@@ -183,7 +184,7 @@ class BlogService {
         // Upload tất cả files song song với timeout
         const uploadPromises = allFiles.map(async (file, index) => {
           const type = file.fieldname === 'files' ? 'file' : 'image';
-          
+
           // Upload to Cloudinary với timeout
           const uploadResult = await Promise.race([
             new Promise((resolve, reject) => {
@@ -192,6 +193,7 @@ class BlogService {
                   folder: 'blogs',
                   resource_type: type === 'file' ? 'auto' : 'image',
                   transformation: type === 'image' ? [
+                    { width: 1200, crop: 'limit' }, // Resize to max 1200px width
                     { quality: 'auto:good' },
                     { fetch_format: 'auto' }
                   ] : undefined
@@ -200,7 +202,7 @@ class BlogService {
               );
               stream.end(file.buffer);
             }),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Upload timeout for file ${index + 1}`)), 30000)
             )
           ]);
@@ -219,7 +221,7 @@ class BlogService {
 
         // Đợi tất cả upload xong
         const uploadedData = await Promise.all(uploadPromises);
-        
+
         // Batch create media records
         await db.BlogMedia.bulkCreate(uploadedData);
 
