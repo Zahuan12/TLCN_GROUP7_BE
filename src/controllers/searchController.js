@@ -1,0 +1,130 @@
+const searchService = require('../services/searchService');
+const ApiResponse = require('../utils/ApiResponse');
+
+class SearchController {
+  /**
+   * GET /api/search?q=query&type=all|users|companies|courses&limit=10
+   */
+  async search(req, res) {
+    try {
+      const { q: query, type = 'all', limit = 10 } = req.query;
+
+      if (!query || query.trim().length === 0) {
+        return ApiResponse.success(res, 'Empty query', {
+          users: [],
+          companies: [],
+          courses: [],
+          total: 0
+        });
+      }
+
+      const limitNum = Math.min(parseInt(limit) || 10, 50); // Max 50 results
+
+      let results;
+
+      switch (type) {
+        case 'users':
+          results = {
+            users: await searchService.searchUsers(query, limitNum),
+            companies: [],
+            courses: [],
+            total: 0
+          };
+          results.total = results.users.length;
+          break;
+
+        case 'companies':
+          results = {
+            users: [],
+            companies: await searchService.searchCompanies(query, limitNum),
+            courses: [],
+            total: 0
+          };
+          results.total = results.companies.length;
+          break;
+
+        case 'courses':
+          results = {
+            users: [],
+            companies: [],
+            courses: await searchService.searchCourses(query, limitNum),
+            total: 0
+          };
+          results.total = results.courses.length;
+          break;
+
+        case 'all':
+        default:
+          results = await searchService.searchAll(query, limitNum);
+          break;
+      }
+
+      return ApiResponse.success(res, 'Search successful', results);
+    } catch (error) {
+      console.error('Search error:', error);
+      return ApiResponse.error(res, error.message || 'Search failed', 500);
+    }
+  }
+
+  /**
+   * GET /api/search/users?q=query
+   */
+  async searchUsers(req, res) {
+    try {
+      const { q: query, limit = 10 } = req.query;
+
+      if (!query || query.trim().length === 0) {
+        return ApiResponse.success(res, 'Empty query', []);
+      }
+
+      const users = await searchService.searchUsers(query, Math.min(parseInt(limit) || 10, 50));
+
+      return ApiResponse.success(res, 'Search users successful', users);
+    } catch (error) {
+      console.error('Search users error:', error);
+      return ApiResponse.error(res, error.message || 'Search users failed', 500);
+    }
+  }
+
+  /**
+   * GET /api/search/companies?q=query
+   */
+  async searchCompanies(req, res) {
+    try {
+      const { q: query, limit = 10 } = req.query;
+
+      if (!query || query.trim().length === 0) {
+        return ApiResponse.success(res, 'Empty query', []);
+      }
+
+      const companies = await searchService.searchCompanies(query, Math.min(parseInt(limit) || 10, 50));
+
+      return ApiResponse.success(res, 'Search companies successful', companies);
+    } catch (error) {
+      console.error('Search companies error:', error);
+      return ApiResponse.error(res, error.message || 'Search companies failed', 500);
+    }
+  }
+
+  /**
+   * GET /api/search/courses?q=query
+   */
+  async searchCourses(req, res) {
+    try {
+      const { q: query, limit = 10 } = req.query;
+
+      if (!query || query.trim().length === 0) {
+        return ApiResponse.success(res, 'Empty query', []);
+      }
+
+      const courses = await searchService.searchCourses(query, Math.min(parseInt(limit) || 10, 50));
+
+      return ApiResponse.success(res, 'Search courses successful', courses);
+    } catch (error) {
+      console.error('Search courses error:', error);
+      return ApiResponse.error(res, error.message || 'Search courses failed', 500);
+    }
+  }
+}
+
+module.exports = new SearchController();

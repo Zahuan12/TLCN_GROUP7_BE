@@ -126,16 +126,16 @@ class BlogService {
       where: { deletedAt: null }
     });
 
-    // 2. Query dữ liệu riêng
-    const blogs = await db.Blog.findAll({
-      offset,
-      limit,
-      order: [['createdAt', 'DESC']],
-      include: [
-        { model: db.BlogMedia, as: 'media' },
-        { model: db.User, as: 'author', attributes: ['id', 'username', 'avatar'] }
-      ]
-    });
+  // 2. Query dữ liệu riêng
+  const blogs = await db.Blog.findAll({
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+    include: [
+      { model: db.BlogMedia, as: 'media' },
+      { model: db.User, as: 'author', attributes: ['id', 'username','avatar'] }
+    ]
+  });
 
     return {
       total,
