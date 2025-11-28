@@ -39,9 +39,7 @@ class CompanyController {
     }
   }
 
-  /**
-   * Lấy danh sách học sinh tham gia khóa học của company
-   */
+
   async getStudentsInCompanyCourses(req, res) {
     try {
       const companyId = req.user.companyId;

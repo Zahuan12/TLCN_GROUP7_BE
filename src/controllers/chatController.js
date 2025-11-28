@@ -2,9 +2,7 @@ const ApiResponse = require('../utils/ApiResponse');
 const ChatService = require('../services/chatService');
 
 class ChatController {
-  /**
-   * Get or create single chat session for student
-   */
+
   async getOrCreateSession(req, res) {
     try {
       const userId = req.user.id;
@@ -16,9 +14,7 @@ class ChatController {
     }
   }
 
-  /**
-   * Send message and get AI response
-   */
+
   async sendMessage(req, res) {
     try {
       const userId = req.user.id;
@@ -32,9 +28,7 @@ class ChatController {
     }
   }
 
-  /**
-   * Clear chat history (reset messages to empty array)
-   */
+
   async clearHistory(req, res) {
     try {
       const userId = req.user.id;
@@ -46,9 +40,7 @@ class ChatController {
     }
   }
 
-  /**
-   * Generate student assessment
-   */
+
   async getAssessment(req, res) {
     try {
       const userId = req.user.id;

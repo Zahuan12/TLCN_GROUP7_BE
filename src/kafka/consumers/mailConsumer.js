@@ -15,7 +15,6 @@ class MailConsumer {
     await this.consumer.run({
       eachMessage: async ({ message }) => {
         const data = JSON.parse(message.value.toString());
-        console.log("[Kafka] Received mail event:", data);
 
         try {
           switch ((data.type || '').toUpperCase()) {
@@ -47,14 +46,11 @@ class MailConsumer {
               break;
           }
 
-          console.log("[MailConsumer] Processed mail event for:", data.to);
         } catch (err) {
           console.error("[MailConsumer] Error handling mail event:", err);
         }
       },
     });
-
-    console.log("[Kafka] MailConsumer started");
   }
 }
 

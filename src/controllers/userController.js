@@ -43,7 +43,7 @@ class UserController {
       const { id } = req.params;
       const { role } = req.body;
 
-      console.log(`Updating role for user ${id} to ${role}`);
+
 
       // Validate role
       const validRoles = ['STUDENT', 'COMPANY'];

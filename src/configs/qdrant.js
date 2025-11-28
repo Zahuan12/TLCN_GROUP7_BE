@@ -11,30 +11,27 @@ class QdrantConfig {
     constructor() {
         // Handle URL properly - remove http:// prefix if exists
         const host = QDRANT_CONFIG.host.replace(/^https?:\/\//, '');
-        
+
         this.client = new QdrantClient({
             url: `http://${host}:${QDRANT_CONFIG.port}`,
             apiKey: QDRANT_CONFIG.apiKey,
             checkCompatibility: false // Skip version check
         });
-        
+
         this.collections = {
             CAREER_PATHS: 'career_paths',
-            LESSONS: 'lessons', 
+            LESSONS: 'lessons',
             TESTS: 'tests'
         };
     }
 
     async initializeCollections() {
         try {
-            console.log('Initializing Qdrant collections...');
-            
             // Create collections if they don't exist
             for (const [key, collectionName] of Object.entries(this.collections)) {
                 await this.createCollectionIfNotExists(collectionName);
             }
-            
-            console.log('All Qdrant collections initialized successfully');
+
         } catch (error) {
             console.error('Error initializing Qdrant collections:', error);
             throw error;
@@ -46,18 +43,14 @@ class QdrantConfig {
             // Check if collection exists
             const collections = await this.client.getCollections();
             const exists = collections.collections?.some(c => c.name === collectionName);
-            
+
             if (!exists) {
-                console.log(`Creating collection: ${collectionName}`);
                 await this.client.createCollection(collectionName, {
                     vectors: {
                         size: 1024, // Cohere embed-multilingual-v3.0 vector size
                         distance: 'Cosine'
                     }
                 });
-                console.log(`Collection ${collectionName} created successfully`);
-            } else {
-                console.log(`Collection ${collectionName} already exists`);
             }
         } catch (error) {
             console.error(`Error creating collection ${collectionName}:`, error);
@@ -69,11 +62,8 @@ class QdrantConfig {
         try {
             const host = QDRANT_CONFIG.host.replace(/^https?:\/\//, '');
             const url = `http://${host}:${QDRANT_CONFIG.port}`;
-            console.log(`Testing connection to Qdrant at ${url}`);
-            
             // Try to get collections - simpler than cluster API
             const collections = await this.client.getCollections();
-            console.log('Qdrant connection successful! Collections:', collections.collections?.map(c => c.name) || []);
             return true;
         } catch (error) {
             console.error('Qdrant connection failed:', error.message);

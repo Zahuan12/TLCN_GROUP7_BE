@@ -2,9 +2,7 @@ const searchService = require('../services/searchService');
 const ApiResponse = require('../utils/ApiResponse');
 
 class SearchController {
-  /**
-   * GET /api/search?q=query&type=all|students|companies|courses&limit=10
-   */
+
   async search(req, res) {
     try {
       const { q: query, type = 'all', limit = 10 } = req.query;
@@ -66,9 +64,7 @@ class SearchController {
     }
   }
 
-  /**
-   * GET /api/search/users?q=query
-   */
+
   async searchUsers(req, res) {
     try {
       const { q: query, limit = 10 } = req.query;
@@ -86,9 +82,7 @@ class SearchController {
     }
   }
 
-  /**
-   * GET /api/search/companies?q=query
-   */
+
   async searchCompanies(req, res) {
     try {
       const { q: query, limit = 10 } = req.query;
@@ -106,9 +100,7 @@ class SearchController {
     }
   }
 
-  /**
-   * GET /api/search/courses?q=query
-   */
+
   async searchCourses(req, res) {
     try {
       const { q: query, limit = 10 } = req.query;

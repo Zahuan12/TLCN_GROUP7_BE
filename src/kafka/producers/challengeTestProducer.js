@@ -7,24 +7,21 @@ class ChallengeTestProducer {
 
   async connect() {
     await this.producer.connect();
-    console.log("[Kafka] ChallengeTestProducer connected");
   }
 
   async sendEvent(data) {
     if (!data.challengeTestId || !data.type) {
-      console.error("[Kafka] Missing challengeTestId or type:", data);
       return;
     }
 
     await this.producer.send({
       topic: this.topic,
-      messages: [{ 
+      messages: [{
         key: data.challengeTestId.toString(),
-        value: JSON.stringify(data) 
+        value: JSON.stringify(data)
       }]
     });
 
-    console.log(`[Kafka] Sent event for ChallengeTest ${data.challengeTestId}, type: ${data.type}`);
   }
 }
 

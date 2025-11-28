@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     companyId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'companies', key: 'id' }, // ✔ FIXED
+      references: { model: 'companies', key: 'id' }, // FIXED
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     }

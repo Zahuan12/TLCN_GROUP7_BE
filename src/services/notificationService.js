@@ -1,18 +1,16 @@
 const db = require('../models');
 
 class NotificationService {
-  /**
-   * Create a notification for a single user
-   */
+
   static async createNotification(userId, payload) {
-    const { 
-      message, 
+    const {
+      message,
       type = 'SYSTEM',
       blogId = null,
       commentId = null,
       actorId = null
     } = payload;
-    
+
     const notif = await db.Notification.create({
       userId,
       message,
@@ -22,7 +20,7 @@ class NotificationService {
       actorId,
       isRead: false
     });
-    
+
     // Emit real-time notification
     const io = global.io;
     if (io) {
@@ -40,39 +38,31 @@ class NotificationService {
           }
         ]
       });
-      
+
       io.to(`user_${userId}`).emit('new_notification', fullNotification);
     }
-    
+
     return notif;
   }
 
-  /**
-   * Create blog like notification
-   */
+
   static async createLikeNotification(blogAuthorId, likerId, blogId) {
-    console.log('Creating like notification:', { blogAuthorId, likerId, blogId });
-    
     // Don't notify if user likes their own post
     if (blogAuthorId === likerId) {
-      console.log('Skipping self-like notification');
       return null;
     }
 
     const actor = await db.User.findByPk(likerId);
     const blog = await db.Blog.findByPk(blogId);
-    
+
     if (!actor) {
-      console.log('Actor not found:', likerId);
-      return null;
-    }
-    
-    if (!blog) {
-      console.log('Blog not found:', blogId);
       return null;
     }
 
-    console.log('Creating notification for user:', blogAuthorId);
+    if (!blog) {
+      return null;
+    }
+
     return await this.createNotification(blogAuthorId, {
       message: `${actor.fullName || actor.username} liked your post: "${(blog.content || blog.title || 'your post').substring(0, 50)}..."`,
       type: 'LIKE',
@@ -81,28 +71,21 @@ class NotificationService {
     });
   }
 
-  /**
-   * Create blog comment notification
-   */
   static async createCommentNotification(blogAuthorId, commenterId, blogId, commentId) {
-    console.log('Creating comment notification:', { blogAuthorId, commenterId, blogId, commentId });
-    
+
     // Don't notify if user comments on their own post
     if (blogAuthorId === commenterId) {
-      console.log('Skipping self-comment notification');
       return null;
     }
 
     const actor = await db.User.findByPk(commenterId);
     const blog = await db.Blog.findByPk(blogId);
-    
+
     if (!actor) {
-      console.log('Actor not found:', commenterId);
       return null;
     }
-    
+
     if (!blog) {
-      console.log('Blog not found:', blogId);
       return null;
     }
 
@@ -115,16 +98,14 @@ class NotificationService {
     });
   }
 
-  /**
-   * Create comment reply notification
-   */
+
   static async createReplyNotification(originalCommenterId, replierId, blogId, replyCommentId) {
     // Don't notify if user replies to their own comment
     if (originalCommenterId === replierId) return null;
 
     const actor = await db.User.findByPk(replierId);
     const blog = await db.Blog.findByPk(blogId);
-    
+
     if (!actor || !blog) return null;
 
     const contentPreview = blog.content ? blog.content.substring(0, 50) + "..." : "a post";
@@ -137,9 +118,7 @@ class NotificationService {
     });
   }
 
-  /**
-   * Get notifications with full details
-   */
+
   static async listNotificationsForUser(userId, limit = 20, offset = 0) {
     const notifications = await db.Notification.findAll({
       where: { userId },
@@ -164,27 +143,25 @@ class NotificationService {
       limit,
       offset
     });
-    
+
     return notifications;
   }
 
   static async markAsRead(notificationIds = []) {
     if (!notificationIds || notificationIds.length === 0) return 0;
     const [count] = await db.Notification.update(
-      { isRead: true }, 
+      { isRead: true },
       { where: { id: notificationIds } }
     );
     return count;
   }
 
-  /**
-   * Get unread count
-   */
+
   static async getUnreadCount(userId) {
     const count = await db.Notification.count({
-      where: { 
-        userId, 
-        isRead: false 
+      where: {
+        userId,
+        isRead: false
       }
     });
     return count;

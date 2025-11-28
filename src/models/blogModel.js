@@ -7,25 +7,25 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true
     },
 
-    // 👇 Nội dung bài viết — có thể là text, emoji, link, v.v.
+    // Nội dung bài viết — có thể là text, emoji, link, v.v.
     content: {
       type: DataTypes.TEXT,
       allowNull: true // Cho phép bài chỉ có ảnh/video
     },
 
-    // 👇 Danh mục (tùy chọn, có thể giữ lại nếu muốn phân loại)
+    // Danh mục (tùy chọn, có thể giữ lại nếu muốn phân loại)
     category: {
       type: DataTypes.STRING,
       allowNull: true
     },
 
-    // 👇 Trạng thái bài viết (ẩn, nháp, công khai)
+    // Trạng thái bài viết (ẩn, nháp, công khai)
     status: {
       type: DataTypes.ENUM('draft', 'published', 'hidden'),
       defaultValue: 'published'
     },
 
-    // 👇 Tác giả
+    // Tác giả
     authorId: {
       type: DataTypes.UUID,
       allowNull: false,

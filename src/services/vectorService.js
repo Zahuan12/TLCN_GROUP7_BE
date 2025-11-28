@@ -10,15 +10,15 @@ class VectorService {
 
     async initializeVectorDatabase() {
         try {
-            
+
             // Initialize Qdrant collections
             await qdrantConfig.initializeCollections();
-            
+
             // Create embeddings for existing data
             await this.indexCareerPaths();
             await this.indexLessons();
             await this.indexTests();
-            
+
         } catch (error) {
             console.error('Error initializing vector database:', error);
             throw error;
@@ -29,12 +29,12 @@ class VectorService {
         try {
             const collections = await this.qdrant.getCollections();
             const requiredCollections = Object.values(this.collections);
-            
+
             for (const collectionName of requiredCollections) {
                 const exists = collections.collections?.some(c => c.name === collectionName);
                 if (!exists) return false;
             }
-            
+
             return true;
         } catch (error) {
             console.error('Error checking vector database readiness:', error);
@@ -44,7 +44,7 @@ class VectorService {
 
     async indexCareerPaths() {
         try {
-            
+
             const careerPaths = await db.CareerPath.findAll({
                 include: [
                     {
@@ -56,14 +56,14 @@ class VectorService {
             });
 
             const points = [];
-            
+
             for (const careerPath of careerPaths) {
                 // Create searchable text
                 const searchText = this.buildCareerPathSearchText(careerPath);
-                
+
                 // Generate embedding
                 const embedding = await aiService.getEmbedding(searchText);
-                
+
                 points.push({
                     id: careerPath.id,
                     vector: embedding,
@@ -85,9 +85,7 @@ class VectorService {
                     wait: true,
                     points: points
                 });
-                console.log(`Indexed ${points.length} career paths`);
             }
-            
         } catch (error) {
             console.error('Error indexing career paths:', error);
             throw error;
@@ -96,8 +94,6 @@ class VectorService {
 
     async indexLessons() {
         try {
-            console.log('Indexing lessons...');
-            
             const lessons = await db.Lesson.findAll({
                 include: [
                     {
@@ -109,14 +105,14 @@ class VectorService {
             });
 
             const points = [];
-            
+
             for (const lesson of lessons) {
                 // Create searchable text
                 const searchText = this.buildLessonSearchText(lesson);
-                
+
                 // Generate embedding
                 const embedding = await aiService.getEmbedding(searchText);
-                
+
                 points.push({
                     id: lesson.id,
                     vector: embedding,
@@ -138,9 +134,8 @@ class VectorService {
                     wait: true,
                     points: points
                 });
-                console.log(`Indexed ${points.length} lessons`);
             }
-            
+
         } catch (error) {
             console.error('Error indexing lessons:', error);
             throw error;
@@ -149,8 +144,6 @@ class VectorService {
 
     async indexTests() {
         try {
-            console.log('Indexing tests...');
-            
             const tests = await db.Test.findAll({
                 include: [
                     {
@@ -169,14 +162,14 @@ class VectorService {
             });
 
             const points = [];
-            
+
             for (const test of tests) {
                 // Create searchable text
                 const searchText = this.buildTestSearchText(test);
-                
+
                 // Generate embedding
                 const embedding = await aiService.getEmbedding(searchText);
-                
+
                 points.push({
                     id: test.id,
                     vector: embedding,
@@ -201,9 +194,7 @@ class VectorService {
                     wait: true,
                     points: points
                 });
-                console.log(`Indexed ${points.length} tests`);
             }
-            
         } catch (error) {
             console.error('Error indexing tests:', error);
             throw error;
@@ -214,7 +205,7 @@ class VectorService {
         try {
             // Generate query embedding
             const queryEmbedding = await aiService.getEmbedding(query);
-            
+
             // Search across all collections
             const [careerPathResults, lessonResults, testResults] = await Promise.all([
                 this.searchInCollection(this.collections.CAREER_PATHS, queryEmbedding, limit),
@@ -234,7 +225,7 @@ class VectorService {
                 .filter(r => r.score >= threshold)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, limit);
-                
+
         } catch (error) {
             console.error('Error searching similar content:', error);
             throw error;
@@ -254,7 +245,7 @@ class VectorService {
                 score: point.score,
                 payload: point.payload
             }));
-            
+
         } catch (error) {
             console.error(`Error searching in collection ${collectionName}:`, error);
             return [];
@@ -265,7 +256,7 @@ class VectorService {
         try {
             const searchText = this.buildCareerPathSearchText(careerPath);
             const embedding = await aiService.getEmbedding(searchText);
-            
+
             await this.qdrant.upsert(this.collections.CAREER_PATHS, {
                 wait: true,
                 points: [{
@@ -282,8 +273,7 @@ class VectorService {
                     }
                 }]
             });
-            
-            console.log(`Added career path ${careerPath.id} to vector database`);
+
         } catch (error) {
             console.error('Error adding career path to vector database:', error);
             throw error;
@@ -294,7 +284,7 @@ class VectorService {
         try {
             const searchText = this.buildLessonSearchText(lesson);
             const embedding = await aiService.getEmbedding(searchText);
-            
+
             await this.qdrant.upsert(this.collections.LESSONS, {
                 wait: true,
                 points: [{
@@ -311,8 +301,7 @@ class VectorService {
                     }
                 }]
             });
-            
-            console.log(`Added lesson ${lesson.id} to vector database`);
+
         } catch (error) {
             console.error('Error adding lesson to vector database:', error);
             throw error;
@@ -323,7 +312,7 @@ class VectorService {
         try {
             const searchText = this.buildTestSearchText(test);
             const embedding = await aiService.getEmbedding(searchText);
-            
+
             await this.qdrant.upsert(this.collections.TESTS, {
                 wait: true,
                 points: [{
@@ -343,8 +332,6 @@ class VectorService {
                     }
                 }]
             });
-            
-            console.log(`Added test ${test.id} to vector database`);
         } catch (error) {
             console.error('Error adding test to vector database:', error);
             throw error;
@@ -356,7 +343,6 @@ class VectorService {
             await this.qdrant.delete(collectionName, {
                 points: [id]
             });
-            console.log(`Deleted ${id} from ${collectionName}`);
         } catch (error) {
             console.error(`Error deleting ${id} from ${collectionName}:`, error);
         }

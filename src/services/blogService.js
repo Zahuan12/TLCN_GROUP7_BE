@@ -24,12 +24,10 @@ class BlogService {
 
     if (allFiles.length === 0) {
       await newBlog.update({ status: 'published' });
-      console.log(`[BlogService] Blog created (no files) in ${Date.now() - startTime}ms`);
       return await this.getBlogById(newBlog.id);
     }
 
     try {
-      console.log(`[BlogService] Starting upload ${allFiles.length} files...`);
       const uploadStartTime = Date.now();
 
       // Upload tất cả files song song với timeout 30s/file
@@ -58,8 +56,6 @@ class BlogService {
           )
         ]);
 
-        console.log(`[BlogService] File ${index + 1}/${allFiles.length} uploaded: ${file.originalname}`);
-
         return {
           blogId: newBlog.id,
           url: uploadResult.secure_url,
@@ -75,8 +71,6 @@ class BlogService {
       // Đợi tất cả upload xong
       const uploadedData = await Promise.all(uploadPromises);
 
-      console.log(`[BlogService] All files uploaded in ${Date.now() - uploadStartTime}ms`);
-
       // Batch create media records (nhanh hơn từng cái)
       await db.BlogMedia.bulkCreate(uploadedData);
 
@@ -84,9 +78,6 @@ class BlogService {
       await newBlog.update({ status: 'published' });
 
       const totalTime = Date.now() - startTime;
-      console.log(`[BlogService] Blog created successfully in ${totalTime}ms (${allFiles.length} files)`);
-      console.log(`[BlogService] Average time per file: ${Math.round(totalTime / allFiles.length)}ms`);
-
     } catch (error) {
       // Rollback: delete blog and uploaded media if error
       console.error('[BlogService.createBlog] Upload error:', error);
@@ -179,7 +170,6 @@ class BlogService {
 
     if (allFiles.length > 0) {
       try {
-        console.log(`[BlogService] Updating blog with ${allFiles.length} new files...`);
 
         // Upload tất cả files song song với timeout
         const uploadPromises = allFiles.map(async (file, index) => {
@@ -224,9 +214,6 @@ class BlogService {
 
         // Batch create media records
         await db.BlogMedia.bulkCreate(uploadedData);
-
-        console.log(`[BlogService] Blog updated in ${Date.now() - startTime}ms (${allFiles.length} files)`);
-
       } catch (error) {
         console.error('[BlogService.updateBlog] Upload error:', error);
         throw new Error('Lỗi upload media: ' + error.message);

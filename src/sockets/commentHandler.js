@@ -7,7 +7,6 @@ module.exports = (io, socket) => {
     
     const roomName = `blog_${blogId}`;
     socket.join(roomName);
-    console.log(`Socket ${socket.id} joined blog room: ${roomName}`);
   });
 
   // Leave blog room
@@ -16,7 +15,6 @@ module.exports = (io, socket) => {
     
     const roomName = `blog_${blogId}`;
     socket.leave(roomName);
-    console.log(`Socket ${socket.id} left blog room: ${roomName}`);
   });
 
   // User join room để nhận notification về comments
@@ -28,12 +26,10 @@ module.exports = (io, socket) => {
     const roomName = `user_${userId}`;
     
     if (rooms.includes(roomName)) {
-      console.log(`User ${userId} already in notification room, skipping...`);
       return;
     }
     
     socket.join(roomName);
-    console.log(`User ${userId} joined notification room (socket: ${socket.id})`);
   });
 
   // Emit notification khi có comment mới

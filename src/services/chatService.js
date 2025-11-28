@@ -2,9 +2,7 @@ const db = require('../models');
 const AIService = require('./aiService');
 
 class ChatService {
-  /**
-   * Get or create single chat session for student
-   */
+
   async getOrCreateSession(userId) {
     // Find student
     const student = await db.Student.findOne({ where: { userId } });
@@ -37,9 +35,6 @@ class ChatService {
     };
   }
 
-  /**
-   * Send message and get AI response
-   */
   async sendMessage(userId, message) {
     if (!message || !message.trim()) {
       throw new Error('Thiếu message');
@@ -106,9 +101,6 @@ class ChatService {
     };
   }
 
-  /**
-   * Clear chat history (reset messages to empty array)
-   */
   async clearHistory(userId) {
     const student = await db.Student.findOne({ where: { userId } });
     if (!student) {
@@ -129,9 +121,6 @@ class ChatService {
     return true;
   }
 
-  /**
-   * Generate student assessment
-   */
   async generateAssessment(userId) {
     const student = await db.Student.findOne({ where: { userId } });
     if (!student) {

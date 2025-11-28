@@ -6,7 +6,6 @@ class CourseImageProducer {
 
   async connect() {
     await this.producer.connect();
-    console.log("[Kafka] CourseImageProducer connected");
   }
 
   async sendUploadEvent(data) {
@@ -21,7 +20,6 @@ class CourseImageProducer {
       messages: [{ key: data.courseId.toString(), value: JSON.stringify(data) }]
     });
 
-    console.log(`[Kafka] Course image event sent for courseId ${data.courseId}, type: ${data.type}`);
   }
 }
 

@@ -14,7 +14,6 @@ class CourseImageConsumer {
     await this.consumer.run({
       eachMessage: async ({ message }) => {
         const data = JSON.parse(message.value.toString());
-        console.log("[Kafka] Received course image event:", data.courseId, data.type);
 
         try {
           // Chỉ gọi handler, tất cả logic xử lý ảnh và DB nằm trong handler
@@ -24,8 +23,6 @@ class CourseImageConsumer {
         }
       }
     });
-
-    console.log("[Kafka] CourseImageConsumer started and listening...");
   }
 }
 

@@ -2,9 +2,7 @@
 const db = require('../models');
 
 class CareerTestService {
-  /**
-   * Lấy bài test duy nhất trong hệ thống
-   */
+
   async getCareerTest() {
     const test = await db.CareerTest.findOne();
 

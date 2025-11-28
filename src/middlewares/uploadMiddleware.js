@@ -40,25 +40,25 @@ const magicSignatures = {
   png: "89504e47",
   
   // GIF variants
-  gif87: "47494638",        // GIF87a
-  gif89: "47494638",        // GIF89a
+  gif87: "47494638",        
+  gif89: "47494638",        
   
   // WebP
-  webp: "52494646",         // RIFF (WebP container)
+  webp: "52494646",         
   
   // BMP
   bmp: "424d",
   
   // TIFF
-  tiff_le: "49492a00",      // Little endian
-  tiff_be: "4d4d002a",      // Big endian
+  tiff_le: "49492a00",     
+  tiff_be: "4d4d002a",      
   
   // ICO
   ico: "00000100",
   
   // SVG (XML-based, check text content)
-  svg: "3c3f786d6c",        // <?xml
-  svg_alt: "3c737667"       // <svg
+  svg: "3c3f786d6c",        
+  svg_alt: "3c737667"      
 };
 
 // 3. Multer dùng memoryStorage

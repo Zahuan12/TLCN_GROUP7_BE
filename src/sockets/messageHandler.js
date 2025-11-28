@@ -30,7 +30,6 @@ module.exports = function messageHandler(io, socket) {
     if (!userId) return;
     addSocketForUser(userId, socket.id);
     socket.userId = userId;
-    console.log(`Socket ${socket.id} joined for user ${userId}`);
     // notify others if needed
     io.emit('user_online', { userId });
   });
@@ -38,7 +37,6 @@ module.exports = function messageHandler(io, socket) {
   socket.on('leave', ({ userId }) => {
     if (!userId) return;
     removeSocketForUser(userId, socket.id);
-    console.log(`Socket ${socket.id} left for user ${userId}`);
     io.emit('user_offline', { userId });
   });
 
@@ -47,7 +45,6 @@ module.exports = function messageHandler(io, socket) {
     if (!conversationId) return;
     try {
       socket.join(conversationId);
-      console.log(`Socket ${socket.id} joined conversation room ${conversationId}`);
     } catch (e) {
       console.error('Failed to join conversation room', e);
     }
@@ -57,7 +54,6 @@ module.exports = function messageHandler(io, socket) {
     if (!conversationId) return;
     try {
       socket.leave(conversationId);
-      console.log(`Socket ${socket.id} left conversation room ${conversationId}`);
     } catch (e) {
       console.error('Failed to leave conversation room', e);
     }
@@ -129,6 +125,5 @@ module.exports = function messageHandler(io, socket) {
       removeSocketForUser(uid, socket.id);
       io.emit('user_offline', { userId: uid });
     }
-    console.log('Socket disconnected:', socket.id);
   });
 };

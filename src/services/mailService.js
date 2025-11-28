@@ -19,9 +19,8 @@ class MailService {
     });
   }
 
-  // ✅ Send welcome email when user registers
   static async sendWelcomeEmail(user) {
-    const subject = "🎉 Welcome to My App! Thank you for signing up";
+    const subject = " Welcome to My App! Thank you for signing up";
     const text = `Hello ${user.fullName || user.username}, thank you for signing up for our service.`;
 
     const html = `
@@ -60,7 +59,7 @@ class MailService {
             </p>
 
             <div style="background: #e8f5e8; border-radius: 10px; padding: 20px; margin: 25px 0;">
-              <h4 style="color: #2e7d32; margin: 0 0 10px 0;">📚 Featured Resources</h4>
+              <h4 style="color: #2e7d32; margin: 0 0 10px 0;">Featured Resources</h4>
               <p style="margin: 0; color: #555; font-size: 14px;">Check out our beginner-friendly courses, career guides, and success stories from our community members.</p>
             </div>
           </div>
@@ -91,9 +90,8 @@ class MailService {
     return this.sendMail({ to: user.email, subject, text, html });
   }
 
-  // ✅ Send OTP email when user forgets password
   static async sendOTPEmail(user, otpCode) {
-    const subject = "🔐 OTP Verification Code for Password Reset";
+    const subject = "OTP Verification Code for Password Reset";
     const text = `Hello ${user.fullName || user.username},\nYour OTP code is: ${otpCode}\nValid for 10 minutes.`;
 
     const html = `
@@ -152,7 +150,7 @@ class MailService {
             </p>
 
             <div style="background: #d1ecf1; border-radius: 10px; padding: 20px; margin: 25px 0;">
-              <h4 style="color: #0c5460; margin: 0 0 10px 0;">🛡️ Account Security</h4>
+              <h4 style="color: #0c5460; margin: 0 0 10px 0;">Account Security</h4>
               <p style="margin: 0; color: #0c5460; font-size: 14px;">
                 We take your account security seriously. All password reset requests are logged and monitored for suspicious activity.
               </p>

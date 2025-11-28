@@ -12,7 +12,7 @@ module.exports = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log('New client connected:', socket.id);
+  
 
     // Gắn các handler vào từng socket connection
     try {

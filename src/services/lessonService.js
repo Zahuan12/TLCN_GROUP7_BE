@@ -54,11 +54,10 @@ class LessonService {
       throw new Error("Lesson ID không hợp lệ");
     }
     
-    console.log('[LessonService.getLessonById] Searching for lesson:', lessonId);
     const lesson = await db.Lesson.findByPk(lessonId);
     
     if (!lesson) {
-      console.log('[LessonService.getLessonById] Lesson not found:', lessonId);
+
       throw new Error(`Lesson không tồn tại với ID: ${lessonId}`);
     }
 

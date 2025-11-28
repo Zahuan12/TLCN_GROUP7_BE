@@ -2,13 +2,10 @@ const { Op } = require('sequelize');
 const db = require('../models');
 
 class SearchService {
-  /**
-   * Tìm kiếm users (students) theo username hoặc fullName
-   */
+
   async searchUsers(query, limit = 10) {
     if (!query || query.trim().length === 0) return [];
 
-    console.log('🔍 Searching users (students) with query:', query);
 
     const students = await db.Student.findAll({
       include: [
@@ -33,8 +30,6 @@ class SearchService {
       order: [['createdAt', 'DESC']]
     });
 
-    console.log('✅ Found users (students):', students.length);
-    
     // Transform to match frontend expectation
     const transformedUsers = students.map(student => ({
       id: student.user.id, // Use user ID, not student ID
@@ -86,8 +81,7 @@ class SearchService {
       order: [['companyName', 'ASC']]
     });
 
-    console.log('✅ Found companies:', companies.length);
-    
+
     // Transform to include user ID for linking
     const transformedCompanies = companies.map(company => ({
       id: company.id,

@@ -17,9 +17,6 @@ class CompanyService {
     return company;
   }
 
-  /**
-   * Lấy danh sách học sinh tham gia các khóa học của company
-   */
   async getStudentsInCompanyCourses(companyId, page = 1, limit = 20) {
     const offset = (page - 1) * limit;
     

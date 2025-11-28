@@ -6,11 +6,11 @@ const TestService = require("./testService");
 class CareerPathService {
 
   async createCareerPath(companyId, data, files) {
-    
-    const company = await db.Company.findOne({ where: { userId: companyId} });
+
+    const company = await db.Company.findOne({ where: { userId: companyId } });
     if (!company) {
       throw new Error('không tìm thấy công ty của bạn');
-}
+    }
     // Tạo CareerPath trước
     const careerPath = await db.CareerPath.create({
       title: data.title,
@@ -73,8 +73,8 @@ class CareerPathService {
   async deleteCourse(companyId, courseId, role) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
-    
-    const company = await db.Company.findOne({ where: { userId: companyId} });
+
+    const company = await db.Company.findOne({ where: { userId: companyId } });
     if (!company) {
       throw new Error('không tìm thấy công ty của bạn');
     }
@@ -128,10 +128,10 @@ class CareerPathService {
       include: [{ model: db.Company, as: 'company', attributes: ['id', 'userId'] }]
     });
     if (!course) throw new Error("Course không tồn tại");
-    
+
     // Check quyền xem: Owner (company) hoặc Admin có thể xem tất cả status
     const isOwner = userId && course.company?.userId === userId;
-    
+
     console.log('[CareerPathService.getCourseById] Debug:', {
       courseId,
       courseStatus: course.status,
@@ -139,7 +139,7 @@ class CareerPathService {
       courseOwnerUserId: course.company?.userId,
       isOwner
     });
-    
+
     // Nếu không phải owner và course chưa published -> không cho xem
     if (!isOwner && course.status !== 'PUBLISHED') {
       throw new Error("Course chưa được xuất bản");
@@ -189,10 +189,10 @@ class CareerPathService {
   async updateCourseStatus(companyId, courseId, status) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
-    
+
     const company = await db.Company.findOne({ where: { userId: companyId } });
     if (!company) throw new Error('Không tìm thấy công ty của bạn');
-    
+
     if (course.companyId !== company.id) throw new Error("Không có quyền chỉnh sửa");
 
     await course.update({ status });

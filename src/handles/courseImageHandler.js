@@ -60,8 +60,6 @@ class CourseImageHandler {
       default:
         throw new Error("Unknown course image event type: " + type);
     }
-
-    console.log(`[CourseImageHandler] Handled ${type} for courseId ${courseId}`);
   }
 }
 

@@ -57,7 +57,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.AuthProvider, { foreignKey: 'userId' });
     User.hasMany(models.RefreshToken, { foreignKey: 'userId' });
 
-    // 💡 Quan trọng: thêm alias để tránh lỗi include
+    // Quan trọng: thêm alias để tránh lỗi include
     User.hasOne(models.Student, { 
       foreignKey: 'userId',
       as: 'student'

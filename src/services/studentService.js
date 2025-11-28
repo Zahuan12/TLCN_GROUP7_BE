@@ -6,7 +6,7 @@ class StudentService {
     return student;
   }
 
- async joinCareerPath(studentId, careerPathId) {
+  async joinCareerPath(studentId, careerPathId) {
     // Kiểm tra careerPath
     const careerPath = await db.CareerPath.findByPk(careerPathId);
     if (!careerPath) throw new Error("Career path not found");
@@ -64,13 +64,9 @@ class StudentService {
       throw new Error("You must join this career path first");
 
     // 3) Gọi AI chấm điểm
-    console.log('[StudentService] Grading test with AI...');
     const gradingResult = await testGradingService.gradeTest(testId, studentId, answers);
-    
     const score = gradingResult.score || 0;
     const passed = score >= 60; // Pass threshold: 60%
-
-    console.log('[StudentService] Grading result:', { score, passed });
 
     // 4) Lưu kết quả vào DB
     let existing = await db.StudentTestResult.findOne({
@@ -164,8 +160,6 @@ class StudentService {
     }
 
     // Lấy danh sách test results
-    console.log('🔍 Getting test results for studentId:', studentId, 'careerPathId:', careerPathId);
-    
     const testResults = await db.StudentTestResult.findAll({
       where: { studentId },
       include: [
@@ -183,9 +177,8 @@ class StudentService {
       ]
     });
 
-    console.log('✅ Found test results:', testResults.length);
     testResults.forEach(result => {
-      console.log('📊 Test result:', {
+      console.log('Test result:', {
         id: result.id,
         testType: result.test?.type,
         testTitle: result.test?.title,

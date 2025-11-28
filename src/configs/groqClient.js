@@ -20,17 +20,14 @@ groqClient.interceptors.response.use(
       config.__retryCount = 0;
     }
 
-    const shouldRetry = 
+    const shouldRetry =
       (error.response?.status === 429 || error.response?.status >= 500) &&
       config.__retryCount < 3;
 
     if (shouldRetry) {
       config.__retryCount += 1;
-      
       // Exponential backoff: 2s, 4s, 8s
       const delay = Math.pow(2, config.__retryCount) * 1000;
-      console.log(`[GroqClient] Retrying after ${delay}ms (attempt ${config.__retryCount}/3)...`);
-      
       await new Promise(resolve => setTimeout(resolve, delay));
       return groqClient(config);
     }

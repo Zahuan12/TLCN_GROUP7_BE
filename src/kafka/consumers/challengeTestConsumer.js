@@ -20,8 +20,6 @@ class ChallengeTestConsumer {
         }
       }
     });
-
-    console.log("[Kafka] ChallengeTestConsumer is listening...");
   }
 }
 

@@ -7,7 +7,6 @@ class MailProducer {
 
   async connect() {
     await this.producer.connect();
-    console.log("[Kafka] MailProducer connected");
   }
 
   // Low-level: gửi bất kỳ event mail nào
@@ -22,7 +21,6 @@ class MailProducer {
       messages: [{ value: JSON.stringify(data) }],
     });
 
-    console.log(`[Kafka] Mail event sent to ${data.to} (${data.type || "general"})`);
   }
 
   // Helper cao cấp: gửi event Welcome (dùng trong service)

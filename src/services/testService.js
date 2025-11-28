@@ -34,7 +34,7 @@ class TestService {
     const test = await Test.findByPk(id, {
       include: [
         { model: Lesson, as: 'lesson', attributes: ["id", "title"] },
-        { model: CareerPath, attributes: ["id", "title"] }
+        { model: CareerPath, as: 'careerPath', attributes: ["id", "title"] }
       ]
     });
 
@@ -148,7 +148,7 @@ class TestService {
           ]
         },
         {
-          model: db.Test,
+          model: Test,
           as: 'test',
           attributes: ['id', 'title', 'type', 'maxScore']
         }

@@ -13,7 +13,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE, 
       allowNull: false 
     },
-    // 👇 Thêm khóa ngoại userId
     userId: {
       type: DataTypes.UUID,
       allowNull: false,

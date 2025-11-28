@@ -2,7 +2,7 @@ const db = require('../models');
 
 class FollowService {
   async toggleFollow(followerId, followingId) {
-    console.log('🔍 Toggle follow service:', { followerId, followingId });
+
     
     if (!followerId || !followingId) throw new Error('Thiếu dữ liệu bắt buộc');
     if (followerId === followingId) throw new Error('Không thể tự follow chính mình');
@@ -10,11 +10,11 @@ class FollowService {
     const targetUser = await db.User.findByPk(followingId);
     if (!targetUser) throw new Error('User không tồn tại');
 
-    console.log('🔍 Checking existing follow...');
+
     
     const existing = await db.Follow.findOne({ where: { followerId, followingId } });
 
-    console.log('📊 Existing follow:', existing ? 'Found' : 'Not found');
+ 
 
     if (existing) {
       await existing.destroy();

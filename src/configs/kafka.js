@@ -14,5 +14,4 @@ const kafka = new Kafka({
   connectionTimeout: 10000,
 });
 
-console.log(" Kafka connected to:", brokers.join(", "));
 module.exports = kafka;

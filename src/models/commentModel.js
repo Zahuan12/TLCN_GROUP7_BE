@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
     Comment.belongsTo(models.User, { as: 'author', foreignKey: 'userId' });
     Comment.belongsTo(models.Blog, { foreignKey: 'postId' });
 
-    // ✅ self-referencing
+    // self-referencing
     Comment.belongsTo(models.Comment, { as: 'parent', foreignKey: 'parentId' });
     Comment.hasMany(models.Comment, { as: 'replies', foreignKey: 'parentId' });
 

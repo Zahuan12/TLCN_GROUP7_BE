@@ -28,9 +28,7 @@ class ChallengeTestHandler {
     }
   }
 
-  // --------------------------
-  // CREATE
-  // --------------------------
+
   async handleCreate(challenge, event) {
     let imageUrl = null;
     let publicId = null;
@@ -58,9 +56,7 @@ class ChallengeTestHandler {
     });
   }
 
-  // --------------------------
-  // UPDATE
-  // --------------------------
+
   async handleUpdate(challenge, event) {
     let imageUrl = challenge.image;
     let publicId = challenge.publicId;
@@ -93,18 +89,14 @@ class ChallengeTestHandler {
     });
   }
 
-  // --------------------------
-  // DELETE
-  // --------------------------
+
   async handleDelete(challenge, event) {
     if (event.oldImagePublicId) {
       await cloudinary.uploader.destroy(event.oldImagePublicId);
     }
   }
 
-  // --------------------------
-  // UPLOAD TO GOOGLE DRIVE
-  // --------------------------
+
  async uploadToDrive(base64, fileName) {
   const drive = getOAuthDrive();
 

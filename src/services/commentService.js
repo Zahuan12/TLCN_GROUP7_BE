@@ -57,7 +57,6 @@ class commentService {
             ]
         });
 
-        console.log('Created comment with user data:', JSON.stringify(fullComment, null, 2));
 
         // Broadcast new comment to all users viewing this blog
         const io = global.io;
