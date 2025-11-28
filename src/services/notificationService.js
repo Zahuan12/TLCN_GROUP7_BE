@@ -10,9 +10,7 @@ class NotificationService {
       type = 'SYSTEM',
       blogId = null,
       commentId = null,
-      actorId = null,
-      conversationId = null,
-      messageId = null
+      actorId = null
     } = payload;
     
     const notif = await db.Notification.create({
@@ -22,8 +20,6 @@ class NotificationService {
       blogId,
       commentId,
       actorId,
-      conversationId,
-      messageId,
       isRead: false
     });
     
@@ -41,16 +37,6 @@ class NotificationService {
             model: db.Blog,
             as: 'blog',
             attributes: ['id', 'content']
-          },
-          {
-            model: db.Conversation,
-            as: 'conversation',
-            attributes: ['id', 'type']
-          },
-          {
-            model: db.Message,
-            as: 'relatedMessage',
-            attributes: ['id', 'content', 'createdAt']
           }
         ]
       });
@@ -152,65 +138,6 @@ class NotificationService {
   }
 
   /**
-   * Create message notification (like Facebook - group messages from same person)
-   */
-  static async createMessageNotification(recipientId, senderId, conversationId, messageId, messageContent) {
-    console.log('Creating message notification:', { recipientId, senderId, conversationId, messageId });
-    
-    // Don't notify if user messages themselves
-    if (recipientId === senderId) {
-      console.log('Skipping self-message notification');
-      return null;
-    }
-
-    const actor = await db.User.findByPk(senderId);
-    if (!actor) {
-      console.log('Sender not found:', senderId);
-      return null;
-    }
-
-    // Check if there's already an unread message notification from this sender
-    const existingNotification = await db.Notification.findOne({
-      where: {
-        userId: recipientId,
-        actorId: senderId,
-        type: 'MESSAGE',
-        conversationId: conversationId,
-        isRead: false
-      },
-      order: [['createdAt', 'DESC']]
-    });
-
-    const actorName = actor.fullName || actor.username;
-    const shortContent = messageContent.length > 50 ? 
-      messageContent.substring(0, 50) + "..." : messageContent;
-
-    if (existingNotification) {
-      // Update existing notification with latest message
-      await existingNotification.update({
-        message: `${actorName}: ${shortContent}`,
-        messageId: messageId,
-        createdAt: new Date() // Update timestamp to show as latest
-      });
-      
-      console.log('Updated existing message notification');
-      return existingNotification;
-    } else {
-      // Create new notification
-      const notification = await this.createNotification(recipientId, {
-        message: `${actorName}: ${shortContent}`,
-        type: 'MESSAGE',
-        conversationId,
-        messageId,
-        actorId: senderId
-      });
-      
-      console.log('Created new message notification');
-      return notification;
-    }
-  }
-
-  /**
    * Get notifications with full details
    */
   static async listNotificationsForUser(userId, limit = 20, offset = 0) {
@@ -231,16 +158,6 @@ class NotificationService {
           model: db.Comment,
           as: 'comment',
           attributes: ['id', 'content']
-        },
-        {
-          model: db.Conversation,
-          as: 'conversation',
-          attributes: ['id', 'type']
-        },
-        {
-          model: db.Message,
-          as: 'relatedMessage',
-          attributes: ['id', 'content', 'createdAt']
         }
       ],
       order: [['createdAt', 'DESC']],

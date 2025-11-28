@@ -205,27 +205,13 @@ class ConversationService {
     }
   }
 
-  // Emit socket event cho new message và notification
+  // Emit socket event cho new message
   async emitNewMessage(io, conversationId, messageWithSender, senderId) {
     if (!io) return;
 
     try {
       const participants = await this.getParticipants(conversationId);
       const participantIds = participants.map(p => String(p.id));
-
-      // Create persistent message notifications for participants except sender
-      const NotificationService = require('./notificationService');
-      for (const participant of participants) {
-        if (String(participant.id) !== String(senderId)) {
-          await NotificationService.createMessageNotification(
-            participant.id, 
-            senderId, 
-            conversationId, 
-            messageWithSender.id, 
-            messageWithSender.content
-          );
-        }
-      }
 
       // Emit new message to all participants
       const socketsMap = io.sockets && io.sockets.sockets;
@@ -239,10 +225,15 @@ class ConversationService {
                 message: messageWithSender 
               });
 
-              // Emit notification to recipients (not sender)
+              // Emit real-time notification to recipients (not sender) - UI level only
               if (sockUserId !== String(senderId)) {
                 const notifMessage = `${messageWithSender.sender.fullName || messageWithSender.sender.username}: ${messageWithSender.content}`;
-                io.to(socket.id).emit('notification', { message: notifMessage });
+                io.to(socket.id).emit('message_notification', { 
+                  message: notifMessage,
+                  conversationId,
+                  sender: messageWithSender.sender,
+                  messageId: messageWithSender.id
+                });
               }
             }
           } catch (inner) {

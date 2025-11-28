@@ -104,18 +104,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'commentId', 
       as: 'comment' 
     });
-    
-    // Related conversation
-    Notification.belongsTo(models.Conversation, { 
-      foreignKey: 'conversationId', 
-      as: 'conversation' 
-    });
-    
-    // Related message
-    Notification.belongsTo(models.Message, { 
-      foreignKey: 'messageId', 
-      as: 'relatedMessage' 
-    });
   };
 
   return Notification;

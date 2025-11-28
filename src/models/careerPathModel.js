@@ -41,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
         include: [{ model: options.models.Company, as: 'company', attributes: ['companyName'] }]
       });
       
+      const vectorService = require('../services/vectorService');
       await vectorService.addCareerPath(careerPathWithCompany);
     } catch (error) {
       console.error('Error adding career path to vector database:', error);
@@ -63,6 +64,8 @@ module.exports = (sequelize, DataTypes) => {
 
   CareerPath.addHook('afterDestroy', async (careerPath, options) => {
     try {
+      const vectorService = require('../services/vectorService');
+      const qdrantConfig = require('../configs/qdrant');
       await vectorService.deleteFromVector(qdrantConfig.collections.CAREER_PATHS, careerPath.id);
     } catch (error) {
       console.error('Error deleting career path from vector database:', error);

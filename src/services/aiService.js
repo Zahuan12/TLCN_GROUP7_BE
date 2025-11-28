@@ -71,11 +71,14 @@ class AIService {
 
   async buildStudentContext(studentId) {
     try {
+      // Lazy load models to avoid circular dependency
+      const { Student, User, StudentProgress, CareerPath, Company, StudentTestResult, Test, Lesson } = require('../models');
+      
       // Get student info
-      const student = await db.Student.findByPk(studentId, {
+      const student = await Student.findByPk(studentId, {
         include: [
           {
-            model: db.User,
+            model: User,
             as: 'user',
             attributes: ['fullName', 'email']
           }
@@ -86,17 +89,17 @@ class AIService {
         throw new Error('Student not found');
       }
 
-      // Get enrolled courses with progress
-      const enrolledCourses = await db.StudentProgress.findAll({
+      // Get enrolled courses
+      const enrolledCourses = await StudentProgress.findAll({
         where: { studentId },
         include: [
           {
-            model: db.CareerPath,
+            model: CareerPath,
             as: 'careerPath',
             attributes: ['id', 'title', 'description'],
             include: [
               {
-                model: db.Company,
+                model: Company,
                 as: 'company',
                 attributes: ['companyName']
               }
@@ -106,16 +109,16 @@ class AIService {
       });
 
       // Get test results
-      const testResults = await db.StudentTestResult.findAll({
+      const testResults = await StudentTestResult.findAll({
         where: { studentId },
         include: [
           {
-            model: db.Test,
+            model: Test,
             as: 'test',
             attributes: ['id', 'title', 'type'],
             include: [
               {
-                model: db.Lesson,
+                model: Lesson,
                 as: 'lesson',
                 attributes: ['title']
               }
@@ -416,13 +419,25 @@ GIỚI HẠN VÀ RANH GIỚI:
         'chương trình', 'chuong trinh', 'công việc', 'cong viec', 'assignment',
         'javascript', 'python', 'java', 'react', 'angular', 'node', 'typescript'
       ];
+
+      // Basic greetings and introductions are always on-topic
+      const basicInteractionKeywords = [
+        'xin chào', 'xin chao', 'chào', 'chao', 'hello', 'hi',
+        'bạn là ai', 'ban la ai', 'ai', 'who are you', 'giới thiệu', 'gioi thieu',
+        'tên', 'ten', 'name', 'làm gì', 'lam gi', 'what', 'cảm ơn', 'cam on', 'thank',
+        'tạm biệt', 'tam biet', 'bye', 'goodbye'
+      ];
       
       const hasLearningKeywords = learningKeywords.some(keyword => 
         lowerMessage.includes(keyword)
       );
 
-      // If has learning keywords, it's on-topic
-      if (hasLearningKeywords) {
+      const hasBasicInteraction = basicInteractionKeywords.some(keyword => 
+        lowerMessage.includes(keyword)
+      );
+
+      // If has learning keywords or basic interaction, it's on-topic
+      if (hasLearningKeywords || hasBasicInteraction) {
         return false;
       }
 
@@ -443,7 +458,14 @@ GIỚI HẠN VÀ RANH GIỚI:
         'Học machine learning cần gì?',
         'Bài tập về thuật toán',
         'Test API như thế nào?',
-        'Framework nào phù hợp với dự án?'
+        'Framework nào phù hợp với dự án?',
+        'Xin chào!',
+        'Hello',
+        'Bạn là ai?',
+        'Tên bạn là gì?',
+        'Giới thiệu về bản thân',
+        'Cảm ơn bạn',
+        'Hi'
       ];
 
       const offTopicExamples = [

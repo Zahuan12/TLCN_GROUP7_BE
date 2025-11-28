@@ -135,6 +135,7 @@ class SearchService {
         },
         {
           model: db.Lesson,
+          as: 'lessons',
           attributes: ['id'],
           required: false
         }
@@ -146,8 +147,8 @@ class SearchService {
     // Add lesson count
     const coursesWithCount = courses.map(course => {
       const courseData = course.toJSON();
-      courseData.lessonCount = courseData.Lessons?.length || 0;
-      delete courseData.Lessons;
+      courseData.lessonCount = courseData.lessons?.length || 0;
+      delete courseData.lessons;
       return courseData;
     });
 
