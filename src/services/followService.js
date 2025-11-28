@@ -2,22 +2,28 @@ const db = require('../models');
 
 class FollowService {
   async toggleFollow(followerId, followingId) {
+    console.log('🔍 Toggle follow service:', { followerId, followingId });
+    
     if (!followerId || !followingId) throw new Error('Thiếu dữ liệu bắt buộc');
     if (followerId === followingId) throw new Error('Không thể tự follow chính mình');
 
     const targetUser = await db.User.findByPk(followingId);
     if (!targetUser) throw new Error('User không tồn tại');
 
+    console.log('🔍 Checking existing follow...');
+    
     const existing = await db.Follow.findOne({ where: { followerId, followingId } });
+
+    console.log('📊 Existing follow:', existing ? 'Found' : 'Not found');
 
     if (existing) {
       await existing.destroy();
       const followerCount = await db.Follow.count({ where: { followingId } });
-      return { following: false, followerCount };
+      return { isFollowing: false, followerCount };
     } else {
       await db.Follow.create({ followerId, followingId });
       const followerCount = await db.Follow.count({ where: { followingId } });
-      return { following: true, followerCount };
+      return { isFollowing: true, followerCount };
     }
   }
 
@@ -27,15 +33,15 @@ class FollowService {
 
     const followerCount = await db.Follow.count({ where: { followingId: targetUserId } });
 
-    let following = false;
+    let isFollowing = false;
     if (viewerUserId) {
       const exists = await db.Follow.findOne({
         where: { followerId: viewerUserId, followingId: targetUserId }
       });
-      following = !!exists;
+      isFollowing = !!exists;
     }
 
-    return { following, followerCount };
+    return { isFollowing, followerCount };
   }
 
   async getFollowers(targetUserId, page = 1, limit = 10) {

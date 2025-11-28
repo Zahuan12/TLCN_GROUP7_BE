@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const searchController = require('../controllers/searchController');
 
-// Search all (users, companies, courses)
-// GET /api/search?q=query&type=all|users|companies|courses&limit=10
+// Search all (students, companies, courses)
+// GET /api/search?q=query&type=all|students|companies|courses&limit=10
 router.get('/', searchController.search);
 
 // Search specific resources

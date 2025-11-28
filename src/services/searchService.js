@@ -3,31 +3,62 @@ const db = require('../models');
 
 class SearchService {
   /**
-   * Tìm kiếm users theo username hoặc fullName
+   * Tìm kiếm users (students) theo username hoặc fullName
    */
   async searchUsers(query, limit = 10) {
     if (!query || query.trim().length === 0) return [];
 
-    const users = await db.User.findAll({
-      where: {
-        [Op.and]: [
-          {
+    console.log('🔍 Searching users (students) with query:', query);
+
+    const students = await db.Student.findAll({
+      include: [
+        {
+          model: db.User,
+          as: 'user',
+          where: {
             [Op.or]: [
               { username: { [Op.like]: `%${query}%` } },
               { fullName: { [Op.like]: `%${query}%` } },
               { email: { [Op.like]: `%${query}%` } }
-            ]
+            ],
+            isActive: true,
+            role: 'STUDENT'
+            // Tạm bỏ verifyStatus để test
           },
-          { isActive: true },
-          { verifyStatus: 'VERIFIED' }
-        ]
-      },
-      attributes: ['id', 'username', 'fullName', 'email', 'avatar', 'role'],
+          attributes: ['id', 'username', 'fullName', 'email', 'avatar', 'verifyStatus', 'role'],
+          required: true
+        }
+      ],
       limit,
-      order: [['fullName', 'ASC']]
+      order: [['createdAt', 'DESC']]
     });
 
-    return users;
+    console.log('✅ Found users (students):', students.length);
+    
+    // Transform to match frontend expectation
+    const transformedUsers = students.map(student => ({
+      id: student.user.id, // Use user ID, not student ID
+      username: student.user.username,
+      fullName: student.user.fullName,
+      email: student.user.email,
+      avatar: student.user.avatar,
+      role: student.user.role,
+      verifyStatus: student.user.verifyStatus,
+      // Extra info from student
+      major: student.major,
+      school: student.school
+    }));
+
+    if (transformedUsers.length > 0) {
+      console.log('First transformed result:', {
+        id: transformedUsers[0].id,
+        fullName: transformedUsers[0].fullName,
+        role: transformedUsers[0].role,
+        verifyStatus: transformedUsers[0].verifyStatus
+      });
+    }
+
+    return transformedUsers;
   }
 
   /**
@@ -55,7 +86,20 @@ class SearchService {
       order: [['companyName', 'ASC']]
     });
 
-    return companies;
+    console.log('✅ Found companies:', companies.length);
+    
+    // Transform to include user ID for linking
+    const transformedCompanies = companies.map(company => ({
+      id: company.id,
+      companyName: company.companyName,
+      industry: company.industry,
+      avatar: company.user?.avatar,
+      website: company.website,
+      // Add user ID for linking to user profile
+      userId: company.user?.id
+    }));
+
+    return transformedCompanies;
   }
 
   /**
@@ -111,7 +155,7 @@ class SearchService {
   }
 
   /**
-   * Tìm kiếm tất cả (users, companies, courses)
+   * Tìm kiếm tất cả (students, companies, courses)
    */
   async searchAll(query, limit = 5) {
     if (!query || query.trim().length === 0) {

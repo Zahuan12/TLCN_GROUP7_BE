@@ -6,9 +6,16 @@ class FollowController {
     try {
       const followerId = req.user.id;
       const { targetUserId } = req.params;
+      
+      console.log('🔄 Toggle follow request:', { followerId, targetUserId });
+      
       const result = await FollowService.toggleFollow(followerId, targetUserId);
+      
+      console.log('✅ Toggle follow result:', result);
+      
       return ApiResponse.success(res, 'Cập nhật follow thành công', result);
     } catch (error) {
+      console.error('❌ Toggle follow error:', error);
       return ApiResponse.error(res, error.message || 'Cập nhật follow thất bại', 400);
     }
   }

@@ -14,6 +14,7 @@ const notificationRouter = require('./notificationRoute');
 const companyRouter = require('./companyRoute');
 const chatRouter = require('./chatRoute');
 const searchRouter = require('./searchRoute');
+const followRouter = require('./followRoute');
 
 function route(app) {
     app.use("/auth",authRouter)
@@ -32,6 +33,7 @@ function route(app) {
     app.use("/companies", companyRouter);
     app.use("/chat", chatRouter);
     app.use("/search", searchRouter);
+    app.use("/follows", followRouter);
 }
 
 module.exports = route;

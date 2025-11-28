@@ -4,10 +4,35 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
+    },
+    followerId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
+    },
+    followingId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'users', 
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
     }
   }, {
     tableName: 'follows',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['followerId', 'followingId'],
+        name: 'unique_follow'
+      }
+    ]
   });
 
   Follow.associate = (models) => {

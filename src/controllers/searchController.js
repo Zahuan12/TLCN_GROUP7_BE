@@ -3,7 +3,7 @@ const ApiResponse = require('../utils/ApiResponse');
 
 class SearchController {
   /**
-   * GET /api/search?q=query&type=all|users|companies|courses&limit=10
+   * GET /api/search?q=query&type=all|students|companies|courses&limit=10
    */
   async search(req, res) {
     try {
@@ -11,7 +11,7 @@ class SearchController {
 
       if (!query || query.trim().length === 0) {
         return ApiResponse.success(res, 'Empty query', {
-          users: [],
+          students: [],
           companies: [],
           courses: [],
           total: 0
@@ -35,7 +35,7 @@ class SearchController {
 
         case 'companies':
           results = {
-            users: [],
+            students: [],
             companies: await searchService.searchCompanies(query, limitNum),
             courses: [],
             total: 0
@@ -45,7 +45,7 @@ class SearchController {
 
         case 'courses':
           results = {
-            users: [],
+            students: [],
             companies: [],
             courses: await searchService.searchCourses(query, limitNum),
             total: 0
