@@ -6,7 +6,7 @@ const RoleMiddleware = require('../middlewares/RoleMiddleware');
 
 // All routes require STUDENT role
 router.use(AuthMiddleware.verifyToken);
-router.use(RoleMiddleware.checkRole('STUDENT'));
+router.use(RoleMiddleware.checkRole(["STUDENT"]));
 
 router.get('/session', ChatController.getOrCreateSession);
 

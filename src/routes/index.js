@@ -15,6 +15,7 @@ const companyRouter = require('./companyRoute');
 const chatRouter = require('./chatRoute');
 const searchRouter = require('./searchRoute');
 const followRouter = require('./followRoute');
+const vectorRouter = require('./vectorRoute');
 
 function route(app) {
     app.use("/auth",authRouter)
@@ -34,6 +35,7 @@ function route(app) {
     app.use("/chat", chatRouter);
     app.use("/search", searchRouter);
     app.use("/follows", followRouter);
+    app.use("/vector", vectorRouter);
 }
 
 module.exports = route;

@@ -14,9 +14,48 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Lesson.associate = (models) => {
-    Lesson.belongsTo(models.CareerPath, { foreignKey: 'careerPathId' });
+    Lesson.belongsTo(models.CareerPath, { foreignKey: 'careerPathId', as: 'careerPath' });
     Lesson.hasMany(models.Test, { foreignKey: 'lessonId' }); // test gắn với lesson
   };
+
+  // Hooks for vector database synchronization
+  Lesson.addHook('afterCreate', async (lesson, options) => {
+    try {
+      // Load with career path data for vector indexing
+      const lessonWithCareerPath = await Lesson.findByPk(lesson.id, {
+        include: [{ model: options.models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
+      });
+      
+      const vectorService = require('../services/vectorService');
+      await vectorService.addLesson(lessonWithCareerPath);
+    } catch (error) {
+      console.error('Error adding lesson to vector database:', error);
+    }
+  });
+
+  Lesson.addHook('afterUpdate', async (lesson, options) => {
+    try {
+      // Re-index updated lesson
+      const lessonWithCareerPath = await Lesson.findByPk(lesson.id, {
+        include: [{ model: options.models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
+      });
+      
+      const vectorService = require('../services/vectorService');
+      await vectorService.addLesson(lessonWithCareerPath); // Upsert
+    } catch (error) {
+      console.error('Error updating lesson in vector database:', error);
+    }
+  });
+
+  Lesson.addHook('afterDestroy', async (lesson, options) => {
+    try {
+      const vectorService = require('../services/vectorService');
+      const qdrantConfig = require('../configs/qdrant');
+      await vectorService.deleteFromVector(qdrantConfig.collections.LESSONS, lesson.id);
+    } catch (error) {
+      console.error('Error deleting lesson from vector database:', error);
+    }
+  });
 
   return Lesson;
 };

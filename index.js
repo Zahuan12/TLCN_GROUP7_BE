@@ -7,6 +7,7 @@ const http = require('http');
 const socketSetup = require('./src/sockets');
 const passport = require('./src/configs/passport.js');
 const kafkaModule = require("./src/kafka");
+const qdrantConfig = require('./src/configs/qdrant');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,7 +32,28 @@ route(app);
 
 // Kết nối DB và start server
 connectDB().then(async() => {
+  // Initialize Kafka
   await kafkaModule.init();
+  
+  // Initialize Vector Database
+  try {
+    console.log('Initializing Vector Database...');
+    // Test connection first
+    const isConnected = await qdrantConfig.testConnection();
+    if (isConnected) {
+      console.log('Qdrant connection successful');
+      
+      // Initialize collections (but not full indexing on startup)
+      await qdrantConfig.initializeCollections();
+      console.log('Qdrant collections ready');
+    } else {
+      console.warn('Qdrant connection failed - vector search will be disabled');
+    }
+  } catch (error) {
+    console.error('Vector database initialization failed:', error.message);
+    console.warn('Continuing without vector search...');
+  }
+  
   const port = process.env.PORT;
   const hostname = process.env.HOST_NAME || "localhost";
 

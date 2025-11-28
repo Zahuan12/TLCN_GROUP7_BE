@@ -61,6 +61,7 @@ module.exports = (sequelize, DataTypes) => {
     // Một Test thuộc về CareerPath (có thể null nếu là MINI)
     Test.belongsTo(models.CareerPath, {
       foreignKey: 'careerPathId',
+      as: 'careerPath',
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     });
@@ -72,6 +73,67 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE'
     });
   };
+
+  // Hooks for vector database synchronization
+  Test.addHook('afterCreate', async (test, options) => {
+    try {
+      // Load with lesson and career path data for vector indexing
+      const testWithRelations = await Test.findByPk(test.id, {
+        include: [
+          {
+            model: options.models.Lesson,
+            as: 'lesson',
+            attributes: ['title'],
+            include: [{
+              model: options.models.CareerPath,
+              as: 'careerPath',
+              attributes: ['title']
+            }]
+          }
+        ]
+      });
+      
+      const vectorService = require('../services/vectorService');
+      await vectorService.addTest(testWithRelations);
+    } catch (error) {
+      console.error('Error adding test to vector database:', error);
+    }
+  });
+
+  Test.addHook('afterUpdate', async (test, options) => {
+    try {
+      // Re-index updated test
+      const testWithRelations = await Test.findByPk(test.id, {
+        include: [
+          {
+            model: options.models.Lesson,
+            as: 'lesson',
+            attributes: ['title'],
+            include: [{
+              model: options.models.CareerPath,
+              as: 'careerPath',
+              attributes: ['title']
+            }]
+          }
+        ]
+      });
+      
+      const vectorService = require('../services/vectorService');
+      await vectorService.addTest(testWithRelations); // Upsert
+    } catch (error) {
+      console.error('Error updating test in vector database:', error);
+    }
+  });
+
+  Test.addHook('afterDestroy', async (test, options) => {
+    try {
+      const vectorService = require('../services/vectorService');
+      const qdrantConfig = require('../configs/qdrant');
+      await vectorService.deleteFromVector(qdrantConfig.collections.TESTS, test.id);
+    } catch (error) {
+      console.error('Error deleting test from vector database:', error);
+    }
+  });
 
   return Test;
 };

@@ -2,13 +2,10 @@ const groqClient = require('../configs/groqClient');
 const cohereClient = require('../configs/cohereClient');
 const db = require('../models');
 const { Op } = require('sequelize');
+const vectorService = require('./vectorService');
 
 class AIService {
-  /**
-   * Generate text embedding using Cohere API
-   * @param {string|string[]} texts - Single text or array of texts to embed
-   * @returns {Promise<number[]|number[][]>} - Embedding vector(s)
-   */
+
   async getEmbedding(texts) {
     try {
       const isArray = Array.isArray(texts);
@@ -27,12 +24,7 @@ class AIService {
     }
   }
 
-  /**
-   * Calculate cosine similarity between two vectors
-   * @param {number[]} vecA - First vector
-   * @param {number[]} vecB - Second vector
-   * @returns {number} - Similarity score (0-1, higher = more similar)
-   */
+
   cosineSimilarity(vecA, vecB) {
     if (vecA.length !== vecB.length) {
       throw new Error('Vectors must have the same length');
@@ -51,13 +43,7 @@ class AIService {
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
-  /**
-   * Find most similar text from a list using embeddings
-   * @param {string} query - Query text
-   * @param {string[]} candidates - List of candidate texts
-   * @param {number} threshold - Minimum similarity score (default 0.7)
-   * @returns {Promise<Array<{text: string, similarity: number}>>}
-   */
+
   async findSimilarTexts(query, candidates, threshold = 0.7) {
     try {
       // Get embeddings for query and all candidates
@@ -217,7 +203,32 @@ GIỚI HẠN VÀ RANH GIỚI:
 
   async searchCourses(query) {
     try {
+      // Check if vector database is ready
+      const isVectorReady = await vectorService.isReady();
       
+      if (isVectorReady) {
+        // Use vector search with Qdrant for better semantic matching
+        const vectorResults = await vectorService.searchSimilarContent(query, 10, 0.6);
+        
+        // Filter only career path results
+        const careerPathResults = vectorResults
+          .filter(result => result.collection === 'career_paths')
+          .slice(0, 5);
+
+        if (careerPathResults.length > 0) {
+          // Return vector search results with enhanced data
+          return careerPathResults.map(result => ({
+            id: result.payload.id,
+            title: result.payload.title,
+            description: result.payload.description,
+            company: result.payload.companyName,
+            score: result.score.toFixed(3),
+            url: `/career-paths/${result.payload.id}`
+          }));
+        }
+      }
+
+      // Fallback to traditional SQL search
       const courses = await db.CareerPath.findAll({
         where: {
           status: 'PUBLISHED',
@@ -251,6 +262,106 @@ GIỚI HẠN VÀ RANH GIỚI:
     }
   }
 
+
+  async searchLessons(query) {
+    try {
+      const vectorResults = await vectorService.searchSimilarContent(query, 10, 0.6);
+      
+      // Filter only lesson results
+      const lessonResults = vectorResults
+        .filter(result => result.collection === 'lessons')
+        .slice(0, 5);
+
+      return lessonResults.map(result => ({
+        id: result.payload.id,
+        title: result.payload.title,
+        careerPathTitle: result.payload.careerPathTitle,
+        careerPathId: result.payload.careerPathId,
+        score: result.score.toFixed(3),
+        url: `/lessons/${result.payload.id}`
+      }));
+    } catch (error) {
+      console.error('[AIService.searchLessons] Error:', error);
+      return [];
+    }
+  }
+
+
+  async searchTests(query) {
+    try {
+      const vectorResults = await vectorService.searchSimilarContent(query, 10, 0.6);
+      
+      // Filter only test results
+      const testResults = vectorResults
+        .filter(result => result.collection === 'tests')
+        .slice(0, 5);
+
+      return testResults.map(result => ({
+        id: result.payload.id,
+        title: result.payload.title,
+        description: result.payload.description,
+        type: result.payload.type,
+        lessonTitle: result.payload.lessonTitle,
+        careerPathTitle: result.payload.careerPathTitle,
+        score: result.score.toFixed(3),
+        url: `/tests/${result.payload.id}`
+      }));
+    } catch (error) {
+      console.error('[AIService.searchTests] Error:', error);
+      return [];
+    }
+  }
+
+
+  async searchAllContent(query) {
+    try {
+      const vectorResults = await vectorService.searchSimilarContent(query, 15, 0.6);
+      
+      const organizedResults = {
+        courses: vectorResults
+          .filter(r => r.collection === 'career_paths')
+          .slice(0, 5)
+          .map(result => ({
+            id: result.payload.id,
+            title: result.payload.title,
+            description: result.payload.description,
+            company: result.payload.companyName,
+            score: result.score.toFixed(3),
+            type: 'course',
+            url: `/career-paths/${result.payload.id}`
+          })),
+        lessons: vectorResults
+          .filter(r => r.collection === 'lessons')
+          .slice(0, 5)
+          .map(result => ({
+            id: result.payload.id,
+            title: result.payload.title,
+            careerPathTitle: result.payload.careerPathTitle,
+            score: result.score.toFixed(3),
+            type: 'lesson',
+            url: `/lessons/${result.payload.id}`
+          })),
+        tests: vectorResults
+          .filter(r => r.collection === 'tests')
+          .slice(0, 5)
+          .map(result => ({
+            id: result.payload.id,
+            title: result.payload.title,
+            description: result.payload.description,
+            lessonTitle: result.payload.lessonTitle,
+            score: result.score.toFixed(3),
+            type: 'test',
+            url: `/tests/${result.payload.id}`
+          }))
+      };
+
+      return organizedResults;
+    } catch (error) {
+      console.error('[AIService.searchAllContent] Error:', error);
+      return { courses: [], lessons: [], tests: [] };
+    }
+  }
+
   isSecuritySensitiveQuery(message) {
     const sensitiveKeywords = [
       // Security & Auth
@@ -273,10 +384,7 @@ GIỚI HẠN VÀ RANH GIỚI:
     const lowerMessage = message.toLowerCase();
     return sensitiveKeywords.some(keyword => lowerMessage.includes(keyword));
   }
-  /**
-   * Use semantic embeddings to classify if query is off-topic
-   * Much more accurate than keyword matching, handles context and no-diacritics text
-   */
+
   async isOffTopicQuery(message) {
     try {
       const lowerMessage = message.toLowerCase();
@@ -406,19 +514,20 @@ GIỚI HẠN VÀ RANH GIỚI:
       // Detect if user is asking for specific course search
       const userMessage = lastMessage?.content?.toLowerCase() || '';
       const isCourseSearchQuery = 
-        /có khóa học (nào về|về|cho)/i.test(userMessage) ||
-        /tìm khóa học/i.test(userMessage) ||
-        /khóa học .* ở đâu/i.test(userMessage) ||
-        /giới thiệu khóa học/i.test(userMessage) ||
-        /course .* available/i.test(userMessage);
+        /có khóa học (nào về|về|cho)|tìm khóa học|khóa học .* ở đâu|giới thiệu khóa học|course .* available/i.test(userMessage);
+      
+      const isLessonSearchQuery = 
+        /có bài học (nào về|về)|tìm bài học|lesson .* about|bài học .* ở đâu/i.test(userMessage);
+        
+      const isTestSearchQuery = 
+        /có (bài )?test (nào về|về)|tìm (bài )?test|test .* about|(bài )?kiểm tra .* ở đâu/i.test(userMessage);
+        
+      const isGeneralContentSearch = 
+        /tìm kiếm|search|có gì về|nội dung về|tài liệu về/i.test(userMessage);
       
       // Disable function calling for general "how to learn" questions
       const isGeneralQuestion =
-        /làm sao (để )?học/i.test(userMessage) ||
-        /bắt đầu học/i.test(userMessage) ||
-        /học .* như thế nào/i.test(userMessage) ||
-        /học gì trước/i.test(userMessage) ||
-        /nên học/i.test(userMessage);
+        /làm sao (để )?học|bắt đầu học|học .* như thế nào|học gì trước|nên học/i.test(userMessage);
 
       // First request - with or without function calling
       const requestConfig = {
@@ -431,8 +540,12 @@ GIỚI HẠN VÀ RANH GIỚI:
         max_tokens: 1024
       };
 
-      // Only enable function calling for explicit course search queries
-      if (isCourseSearchQuery && !isGeneralQuestion) {
+      // Only enable function calling for explicit search queries
+      const shouldEnableFunctionCalling = 
+        (isCourseSearchQuery || isLessonSearchQuery || isTestSearchQuery || isGeneralContentSearch) && 
+        !isGeneralQuestion;
+      
+      if (shouldEnableFunctionCalling) {
         requestConfig.tools = [
           {
             type: 'function',
@@ -445,6 +558,57 @@ GIỚI HẠN VÀ RANH GIỚI:
                   query: {
                     type: 'string',
                     description: 'Từ khóa tìm kiếm cụ thể (ví dụ: "java", "frontend", "data science", "backend", "python").'
+                  }
+                },
+                required: ['query']
+              }
+            }
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'search_lessons',
+              description: 'Tìm kiếm bài học cụ thể trong các khóa học. Sử dụng khi sinh viên hỏi về bài học, chương cụ thể.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  query: {
+                    type: 'string',
+                    description: 'Từ khóa tìm kiếm bài học (ví dụ: "OOP", "loop", "function", "array").'
+                  }
+                },
+                required: ['query']
+              }
+            }
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'search_tests',
+              description: 'Tìm kiếm bài kiểm tra, bài thi. Sử dụng khi sinh viên hỏi về bài test, quiz cụ thể.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  query: {
+                    type: 'string',
+                    description: 'Từ khóa tìm kiếm test (ví dụ: "java test", "final exam", "quiz").'
+                  }
+                },
+                required: ['query']
+              }
+            }
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'search_all_content',
+              description: 'Tìm kiếm tất cả loại nội dung (khóa học, bài học, test). Sử dụng khi sinh viên hỏi chung chung về nội dung học tập.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  query: {
+                    type: 'string',
+                    description: 'Từ khóa tìm kiếm tổng quát.'
                   }
                 },
                 required: ['query']
@@ -464,30 +628,45 @@ GIỚI HẠN VÀ RANH GIỚI:
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
         try {
           const toolCall = assistantMessage.tool_calls[0];
-          
-          if (toolCall.function.name === 'search_courses') {
-            const args = JSON.parse(toolCall.function.arguments);
-            const searchResults = await this.searchCourses(args.query);
+          const args = JSON.parse(toolCall.function.arguments);
+          let searchResults;
 
-            // Second request with function result
-            const finalResponse = await groqClient.post('/chat/completions', {
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...messages,
-                assistantMessage,
-                {
-                  role: 'tool',
-                  tool_call_id: toolCall.id,
-                  content: JSON.stringify(searchResults)
-                }
-              ],
-              temperature: 0.7,
-              max_tokens: 1024
-            });
-
-            return finalResponse.data.choices[0].message.content;
+          // Handle different function calls
+          switch (toolCall.function.name) {
+            case 'search_courses':
+              searchResults = await this.searchCourses(args.query);
+              break;
+            case 'search_lessons':
+              searchResults = await this.searchLessons(args.query);
+              break;
+            case 'search_tests':
+              searchResults = await this.searchTests(args.query);
+              break;
+            case 'search_all_content':
+              searchResults = await this.searchAllContent(args.query);
+              break;
+            default:
+              searchResults = [];
           }
+
+          // Second request with function result
+          const finalResponse = await groqClient.post('/chat/completions', {
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages,
+              assistantMessage,
+              {
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(searchResults)
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 1024
+          });
+
+          return finalResponse.data.choices[0].message.content;
         } catch (funcError) {
           console.error('[AIService.chat] Function call error:', funcError.message);
           // If function call fails, return the text content if available
@@ -526,9 +705,7 @@ GIỚI HẠN VÀ RANH GIỚI:
     }
   }
 
-  /**
-   * Generate personalized assessment
-   */
+
   async generateAssessment(studentContext) {
     try {
       const prompt = `Dựa trên dữ liệu học tập của sinh viên ${studentContext.studentName}, hãy tạo một báo cáo đánh giá chi tiết bao gồm:
@@ -564,9 +741,7 @@ Hãy viết báo cáo bằng tiếng Việt, chi tiết, cụ thể và mang tí
     }
   }
 
-  /**
-   * Generate session title from first message
-   */
+
   async generateSessionTitle(firstMessage) {
     try {
       const response = await groqClient.post('/chat/completions', {

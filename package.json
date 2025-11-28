@@ -5,12 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "init-vector-db": "node tools/initVectorDB.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.16.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cohere-ai": "^7.20.0",
