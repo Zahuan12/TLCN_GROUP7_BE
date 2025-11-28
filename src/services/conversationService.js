@@ -112,12 +112,163 @@ class ConversationService {
       throw new Error("Tin nhắn không được rỗng");
     }
 
-    return await db.Message.create({
+    const msg = await db.Message.create({
       conversationId,
       senderId,
       content,
       type: "TEXT",
     });
+
+    // Load message với sender info để trả về
+    const messageWithSender = await db.Message.findByPk(msg.id, {
+      include: [{ 
+        model: db.User, 
+        as: 'sender', 
+        attributes: ['id', 'username', 'fullName', 'avatar'] 
+      }]
+    });
+
+    return messageWithSender;
+  }
+
+  // Xóa tin nhắn
+  async deleteMessage(messageId, userId) {
+    const message = await db.Message.findByPk(messageId);
+    
+    if (!message) {
+      throw new Error("Tin nhắn không tồn tại");
+    }
+
+    // Kiểm tra user có quyền truy cập conversation không
+    const canAccess = await this.canAccessConversation(message.conversationId, userId);
+    if (!canAccess) {
+      throw new Error("Bạn không có quyền truy cập conversation này");
+    }
+
+    // Chỉ cho phép người gửi xóa tin nhắn của mình
+    if (message.senderId !== userId) {
+      throw new Error("Bạn chỉ có thể xóa tin nhắn của chính mình");
+    }
+
+    // Soft delete - cập nhật content thành đã xóa
+    await message.update({
+      content: "Tin nhắn đã được xóa",
+      type: "DELETED"
+    });
+
+    // Reload message với sender info để trả về
+    const deletedMessage = await db.Message.findByPk(messageId, {
+      include: [
+        { 
+          model: db.User, 
+          as: 'sender', 
+          attributes: ['id', 'username', 'fullName', 'avatar'] 
+        }
+      ]
+    });
+
+    return {
+      message: deletedMessage,
+      conversationId: message.conversationId
+    };
+  }
+
+  // Emit socket event cho message deleted
+  async emitMessageDeleted(io, conversationId, messageId, deletedMessage) {
+    if (!io) return;
+
+    try {
+      // Get conversation participants
+      const participants = await this.getParticipants(conversationId);
+      const participantIds = participants.map(p => String(p.id));
+
+      // Emit to all participants
+      const socketsMap = io.sockets && io.sockets.sockets;
+      if (socketsMap && socketsMap.size > 0) {
+        socketsMap.forEach((socket) => {
+          try {
+            const sockUserId = socket.userId ? String(socket.userId) : null;
+            if (sockUserId && participantIds.includes(sockUserId)) {
+              io.to(socket.id).emit('message_deleted', {
+                conversationId: conversationId,
+                messageId: messageId,
+                message: deletedMessage
+              });
+            }
+          } catch (inner) {
+            console.error('Failed to emit to socket:', inner);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to emit message_deleted from service', e);
+    }
+  }
+
+  // Emit socket event cho new message và notification
+  async emitNewMessage(io, conversationId, messageWithSender, senderId) {
+    if (!io) return;
+
+    try {
+      const participants = await this.getParticipants(conversationId);
+      const participantIds = participants.map(p => String(p.id));
+
+      // Create persistent message notifications for participants except sender
+      const NotificationService = require('./notificationService');
+      for (const participant of participants) {
+        if (String(participant.id) !== String(senderId)) {
+          await NotificationService.createMessageNotification(
+            participant.id, 
+            senderId, 
+            conversationId, 
+            messageWithSender.id, 
+            messageWithSender.content
+          );
+        }
+      }
+
+      // Emit new message to all participants
+      const socketsMap = io.sockets && io.sockets.sockets;
+      if (socketsMap && socketsMap.size > 0) {
+        socketsMap.forEach(socket => {
+          try {
+            const sockUserId = socket.userId ? String(socket.userId) : null;
+            if (sockUserId && participantIds.includes(sockUserId)) {
+              io.to(socket.id).emit('new_message', { 
+                conversationId, 
+                message: messageWithSender 
+              });
+
+              // Emit notification to recipients (not sender)
+              if (sockUserId !== String(senderId)) {
+                const notifMessage = `${messageWithSender.sender.fullName || messageWithSender.sender.username}: ${messageWithSender.content}`;
+                io.to(socket.id).emit('notification', { message: notifMessage });
+              }
+            }
+          } catch (inner) {
+            console.error('Failed to emit message/notification to socket:', inner);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to emit new_message from service', e);
+    }
+  }
+
+  // Kiểm tra quyền truy cập conversation
+  async canAccessConversation(conversationId, userId) {
+    const conversation = await db.Conversation.findByPk(conversationId, {
+      include: [
+        {
+          model: db.User,
+          through: { attributes: [] },
+          where: { id: userId },
+          required: true
+        }
+      ]
+    });
+
+    return !!conversation;
   }
 }
 

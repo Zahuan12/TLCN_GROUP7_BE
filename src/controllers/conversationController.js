@@ -1,6 +1,4 @@
-const db = require("../models");
 const ConversationService = require("../services/conversationService");
-const NotificationService = require('../services/notificationService');
 const ApiResponse = require("../utils/ApiResponse");
 
 class ConversationController {
@@ -54,73 +52,38 @@ class ConversationController {
       const senderId = req.user.id;
       const conversationId = req.params.id;
       const { content } = req.body;
+      const io = req.app.get('io');
 
-      const msg = await ConversationService.sendMessage(
+      // Gọi service để xử lý logic gửi message
+      const messageWithSender = await ConversationService.sendMessage(
         conversationId,
         senderId,
         content
       );
 
-      // load saved message with sender info for notification
-      const messageWithSender = await db.Message.findByPk(msg.id, {
-        include: [{ model: db.User, as: 'sender', attributes: ['id', 'username', 'fullName', 'avatar'] }]
-      });
-
-      // Emit to all connected sockets belonging to conversation participants
-      try {
-        const io = req.app && req.app.get && req.app.get('io');
-        if (io) {
-          // get participant ids from service
-          const participants = await ConversationService.getParticipants(conversationId);
-          const participantIds = participants.map((p) => String(p.id));
-
-          // Create persistent notifications for participants except sender
-          try {
-            const recipients = participantIds.filter((pid) => pid !== String(senderId));
-            if (recipients.length > 0) {
-              const notifMessage = `${messageWithSender.sender.fullName || messageWithSender.sender.username}: ${messageWithSender.content}`;
-              await NotificationService.createForRecipients(recipients, { message: notifMessage, type: 'SYSTEM' });
-              // emit a notification socket event to the recipients' sockets
-              const socketsMap = io.sockets && io.sockets.sockets;
-              if (socketsMap && socketsMap.size >= 0) {
-                socketsMap.forEach((s) => {
-                  try {
-                    const sid = s.id;
-                    const sockUserId = s.userId ? String(s.userId) : null;
-                    if (sockUserId && recipients.includes(sockUserId)) {
-                      io.to(sid).emit('notification', { message: notifMessage });
-                    }
-                  } catch (inner) {
-                    // ignore
-                  }
-                });
-              }
-            }
-          } catch (notifErr) {
-            console.error('Failed to create/emit notifications', notifErr);
-          }
-
-          // io.sockets.sockets is a Map in socket.io v4
-          const socketsMap = io.sockets && io.sockets.sockets;
-          if (socketsMap && socketsMap.size >= 0) {
-            socketsMap.forEach((s) => {
-              try {
-                const sid = s.id;
-                const sockUserId = s.userId ? String(s.userId) : null;
-                if (sockUserId && participantIds.includes(sockUserId)) {
-                  io.to(sid).emit('new_message', { conversationId, message: messageWithSender });
-                }
-              } catch (inner) {
-                // ignore per-socket errors
-              }
-            });
-          }
-        }
-      } catch (e) {
-        console.error('Failed to emit new_message from controller', e);
-      }
+      // Emit socket events thông qua service
+      await ConversationService.emitNewMessage(io, conversationId, messageWithSender, senderId);
 
       return ApiResponse.success(res, "Sent", messageWithSender);
+    } catch (err) {
+      return ApiResponse.error(res, err.message, 400);
+    }
+  }
+
+  async deleteMessage(req, res) {
+    try {
+      const userId = req.user.id;
+      const messageId = req.params.messageId;
+      const io = req.app.get('io');
+
+      // Gọi service để xử lý tất cả logic
+      const result = await ConversationService.deleteMessage(messageId, userId);
+      const { message: deletedMessage, conversationId } = result;
+
+      // Emit socket event thông qua service
+      await ConversationService.emitMessageDeleted(io, conversationId, messageId, deletedMessage);
+
+      return ApiResponse.success(res, "Tin nhắn đã được xóa", deletedMessage);
     } catch (err) {
       return ApiResponse.error(res, err.message, 400);
     }

@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     type: {
-      type: DataTypes.ENUM('TEXT', 'IMAGE', 'FILE'),
+      type: DataTypes.ENUM('TEXT', 'IMAGE', 'FILE', 'DELETED'),
       defaultValue: 'TEXT'
     },
     // foreign keys

@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false 
     },
     type: { 
-      type: DataTypes.ENUM('SYSTEM', 'FOLLOW', 'COMMENT', 'LIKE', 'REPLY'), 
+      type: DataTypes.ENUM('SYSTEM', 'FOLLOW', 'COMMENT', 'LIKE', 'REPLY', 'MESSAGE'), 
       defaultValue: 'SYSTEM' 
     },
     isRead: { 
@@ -55,6 +55,25 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id'
       },
       onDelete: 'SET NULL'
+    },
+    // For message notifications
+    conversationId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'conversations',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
+    },
+    messageId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'messages',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
     }
   }, {
     tableName: 'notifications',
@@ -84,6 +103,18 @@ module.exports = (sequelize, DataTypes) => {
     Notification.belongsTo(models.Comment, { 
       foreignKey: 'commentId', 
       as: 'comment' 
+    });
+    
+    // Related conversation
+    Notification.belongsTo(models.Conversation, { 
+      foreignKey: 'conversationId', 
+      as: 'conversation' 
+    });
+    
+    // Related message
+    Notification.belongsTo(models.Message, { 
+      foreignKey: 'messageId', 
+      as: 'relatedMessage' 
     });
   };
 

@@ -18,4 +18,7 @@ router.get("/messages/:id", ConversationController.getMessages);
 // 3. Gửi tin nhắn
 router.post("/messages/:id", ConversationController.sendMessage);
 
+// 4. Xóa tin nhắn
+router.delete("/messages/:messageId", ConversationController.deleteMessage);
+
 module.exports = router;
