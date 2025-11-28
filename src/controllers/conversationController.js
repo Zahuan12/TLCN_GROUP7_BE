@@ -88,6 +88,20 @@ class ConversationController {
       return ApiResponse.error(res, err.message, 400);
     }
   }
+
+  async deleteConversation(req, res) {
+    try {
+      const userId = req.user.id;
+      const conversationId = req.params.conversationId;
+
+      // Gọi service để xử lý logic xóa conversation
+      await ConversationService.deleteConversation(conversationId, userId);
+
+      return ApiResponse.success(res, "Cuộc hội thoại đã được xóa", null);
+    } catch (err) {
+      return ApiResponse.error(res, err.message, 400);
+    }
+  }
 }
 
 module.exports = new ConversationController();

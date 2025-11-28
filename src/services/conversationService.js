@@ -261,6 +261,27 @@ class ConversationService {
 
     return !!conversation;
   }
+
+  // Xóa conversation (chỉ người tham gia mới được xóa)
+  async deleteConversation(conversationId, userId) {
+    // Kiểm tra xem user có quyền truy cập conversation không
+    const hasAccess = await this.canAccessConversation(conversationId, userId);
+    if (!hasAccess) {
+      throw new Error("Bạn không có quyền xóa cuộc hội thoại này");
+    }
+
+    // Xóa tất cả messages trong conversation trước
+    await db.Message.destroy({
+      where: { conversationId }
+    });
+
+    // Xóa conversation
+    await db.Conversation.destroy({
+      where: { id: conversationId }
+    });
+
+    return true;
+  }
 }
 
 module.exports = new ConversationService();

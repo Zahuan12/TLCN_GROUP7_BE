@@ -21,4 +21,7 @@ router.post("/messages/:id", ConversationController.sendMessage);
 // 4. Xóa tin nhắn
 router.delete("/messages/:messageId", ConversationController.deleteMessage);
 
+// 5. Xóa conversation
+router.delete("/:conversationId", ConversationController.deleteConversation);
+
 module.exports = router;

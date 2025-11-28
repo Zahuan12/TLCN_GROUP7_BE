@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const messageHandler = require('./messageHandler');
 const commentHandler = require('./commentHandler');
 const notificationHandler = require('./notificationHandler');
+const likeHandler = require('./likeHandler');
 
 module.exports = (server) => {
   const io = new Server(server, {
@@ -19,6 +20,7 @@ module.exports = (server) => {
       messageHandler(io, socket);
       commentHandler(io, socket);
       notificationHandler(io, socket);
+      likeHandler(io, socket);
 
     } catch (err) {
       console.error('Failed to attach socket handlers', err);
