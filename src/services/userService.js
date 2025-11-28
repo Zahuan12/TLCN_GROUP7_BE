@@ -4,7 +4,9 @@ const bcrypt = require('bcryptjs');
 
 class UserService {
   async createUser(data) {
+    console.log('UserService.createUser received data:', data);
     const { email, username, fullName, role, password, provider = 'LOCAL', providerId } = data;
+    console.log('UserService.createUser extracted email:', email);
 
     // Kiểm tra email trùng
     const existingUser = await db.User.findOne({ where: { email } });
@@ -12,6 +14,7 @@ class UserService {
 
     // Tạo user
     const user = await db.User.create({ email, username, fullName, role });
+    console.log('UserService.createUser created user with email:', user.email);
 
     // Hash password nếu LOCAL
     let hashedPassword = null;
@@ -24,7 +27,7 @@ class UserService {
       await db.Student.create({
         userId: user.id,
         major: null,
-        school: null
+        school: null,
       });
     }
 
@@ -44,11 +47,12 @@ class UserService {
       userId: user.id,
       provider,
       providerId: provider === 'GOOGLE' ? providerId : null,
-      password: hashedPassword
+      password: hashedPassword,
+      verifyStatus: 'VERIFIED'
     });
 
     // Gửi email Kafka
-    
+    console.log('UserService.createUser sending email to:', user.email);
     await kafkaModule.producers.mailProducer.sendWelcomeEmail({
       email: user.email,
       fullName: user.fullName,
