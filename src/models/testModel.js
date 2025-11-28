@@ -1,4 +1,3 @@
-const models = require('./index');
 const vectorService = require('../services/vectorService');
 const qdrantConfig = require('../configs/qdrant');
 
@@ -82,14 +81,15 @@ module.exports = (sequelize, DataTypes) => {
   Test.addHook('afterCreate', async (test, options) => {
     try {
       // Load with lesson and career path data for vector indexing
+      const { Lesson, CareerPath } = require('./index');
       const testWithRelations = await Test.findByPk(test.id, {
         include: [
           {
-            model: models.Lesson,
+            model: Lesson,
             as: 'lesson',
             attributes: ['title'],
             include: [{
-              model: models.CareerPath,
+              model: CareerPath,
               as: 'careerPath',
               attributes: ['title']
             }]
@@ -97,7 +97,6 @@ module.exports = (sequelize, DataTypes) => {
         ]
       });
       
-      const vectorService = require('../services/vectorService');
       await vectorService.addTest(testWithRelations);
     } catch (error) {
       console.error('Error adding test to vector database:', error);
@@ -107,15 +106,15 @@ module.exports = (sequelize, DataTypes) => {
   Test.addHook('afterUpdate', async (test, options) => {
     try {
       // Re-index updated test
-      const models = require('./index');
+      const { Lesson, CareerPath } = require('./index');
       const testWithRelations = await Test.findByPk(test.id, {
         include: [
           {
-            model: models.Lesson,
+            model: Lesson,
             as: 'lesson',
             attributes: ['title'],
             include: [{
-              model: models.CareerPath,
+              model: CareerPath,
               as: 'careerPath',
               attributes: ['title']
             }]

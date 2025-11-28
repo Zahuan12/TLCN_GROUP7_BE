@@ -1,4 +1,3 @@
-const models = require('./index');
 const vectorService = require('../services/vectorService');
 const qdrantConfig = require('../configs/qdrant');
 
@@ -39,8 +38,9 @@ module.exports = (sequelize, DataTypes) => {
   CareerPath.addHook('afterCreate', async (careerPath, options) => {
     try {
       // Load with company data for vector indexing
+      const { Company } = require('./index');
       const careerPathWithCompany = await CareerPath.findByPk(careerPath.id, {
-        include: [{ model: models.Company, as: 'company', attributes: ['companyName'] }]
+        include: [{ model: Company, as: 'company', attributes: ['companyName'] }]
       });
       
       await vectorService.addCareerPath(careerPathWithCompany);
@@ -52,8 +52,9 @@ module.exports = (sequelize, DataTypes) => {
   CareerPath.addHook('afterUpdate', async (careerPath, options) => {
     try {
       // Re-index updated career path
+      const { Company } = require('./index');
       const careerPathWithCompany = await CareerPath.findByPk(careerPath.id, {
-        include: [{ model: models.Company, as: 'company', attributes: ['companyName'] }]
+        include: [{ model: Company, as: 'company', attributes: ['companyName'] }]
       });
       
       await vectorService.addCareerPath(careerPathWithCompany); // Upsert

@@ -1,4 +1,3 @@
-const models = require('./index');
 const vectorService = require('../services/vectorService');
 const qdrantConfig = require('../configs/qdrant');
 
