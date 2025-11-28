@@ -25,8 +25,9 @@ module.exports = (sequelize, DataTypes) => {
   Lesson.addHook('afterCreate', async (lesson, options) => {
     try {
       // Load with career path data for vector indexing
+      const { CareerPath } = require('./index');
       const lessonWithCareerPath = await Lesson.findByPk(lesson.id, {
-        include: [{ model: models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
+        include: [{ model: CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
       });
       
       await vectorService.addLesson(lessonWithCareerPath);
@@ -38,11 +39,11 @@ module.exports = (sequelize, DataTypes) => {
   Lesson.addHook('afterUpdate', async (lesson, options) => {
     try {
       // Re-index updated lesson
+      const { CareerPath } = require('./index');
       const lessonWithCareerPath = await Lesson.findByPk(lesson.id, {
-        include: [{ model: models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
+        include: [{ model: CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
       });
       
-      const vectorService = require('../services/vectorService');
       await vectorService.addLesson(lessonWithCareerPath); // Upsert
     } catch (error) {
       console.error('Error updating lesson in vector database:', error);

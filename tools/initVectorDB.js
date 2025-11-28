@@ -10,7 +10,7 @@ async function initializeVectorDB() {
         const isConnected = await qdrantConfig.testConnection();
         
         if (!isConnected) {
-            console.error('❌ Qdrant connection failed. Make sure Qdrant server is running.');
+            console.error('Qdrant connection failed. Make sure Qdrant server is running.');
             console.log('To start Qdrant locally with Docker:');
             console.log('docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant');
             process.exit(1);
