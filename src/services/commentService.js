@@ -1,4 +1,6 @@
 const db = require('../models');
+const NotificationService = require('./notificationService');
+
 class commentService {
     async createComment(blogId, userId, content, parentId = null) {
         if (!blogId || !userId || !content) {
@@ -8,9 +10,10 @@ class commentService {
         const blog = await db.Blog.findByPk(blogId);
         if (!blog) throw new Error('Blog không tồn tại');
 
+        let parentComment = null;
         if (parentId) {
-            const parent = await db.Comment.findByPk(parentId);
-            if (!parent) throw new Error('Comment cha không tồn tại');
+            parentComment = await db.Comment.findByPk(parentId);
+            if (!parentComment) throw new Error('Comment cha không tồn tại');
         }
 
         const comment = await db.Comment.create({
@@ -20,11 +23,52 @@ class commentService {
             parentId: parentId || null
         });
 
-        return await db.Comment.findByPk(comment.id, {
+        // Create notifications
+        try {
+            if (parentId && parentComment) {
+                // This is a reply - notify the original commenter
+                if (parentComment.userId !== userId) {
+                    await NotificationService.createReplyNotification(
+                        parentComment.userId, 
+                        userId, 
+                        blogId, 
+                        comment.id
+                    );
+                }
+            } else {
+                // This is a comment - notify the blog author
+                if (blog.authorId && blog.authorId !== userId) {
+                    await NotificationService.createCommentNotification(
+                        blog.authorId, 
+                        userId, 
+                        blogId, 
+                        comment.id
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error creating comment notification:', error);
+            // Don't fail the comment operation if notification fails
+        }
+
+        const fullComment = await db.Comment.findByPk(comment.id, {
             include: [
-                { model: db.User, attributes: ['id', 'username'] }
+                { model: db.User, as: 'author', attributes: ['id', 'username', 'fullName', 'avatar'] }
             ]
         });
+
+        console.log('Created comment with user data:', JSON.stringify(fullComment, null, 2));
+
+        // Broadcast new comment to all users viewing this blog
+        const io = global.io;
+        if (io) {
+            io.to(`blog_${blogId}`).emit('new_comment', {
+                blogId,
+                comment: fullComment
+            });
+        }
+
+        return fullComment;
     }
 
     async getCommentsByBlogId(blogId, page = 1, limit = 10) {
@@ -38,10 +82,12 @@ class commentService {
             limit,
             order: [['createdAt', 'DESC']],
             include: [
-                { model: db.User, attributes: ['id', 'username'] },
-                { model: db.Comment, as: 'replies', include: [{ model: db.User, attributes: ['id', 'username'] }] }
+                { model: db.User, as: 'author', attributes: ['id', 'username', 'fullName', 'avatar'] },
+                { model: db.Comment, as: 'replies', include: [{ model: db.User, as: 'author', attributes: ['id', 'username', 'fullName', 'avatar'] }] }
             ]
         });
+
+        console.log('Fetched comments with user data:', JSON.stringify(rows[0], null, 2));
 
         return {
             total: count,

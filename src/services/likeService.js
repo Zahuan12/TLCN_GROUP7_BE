@@ -1,4 +1,5 @@
 const db = require('../models');
+const NotificationService = require('./notificationService');
 
 class LikeService {
   async toggleLikeBlog(userId, blogId) {
@@ -15,6 +16,17 @@ class LikeService {
       return { liked: false, count };
     } else {
       await db.Like.create({ userId, postId: blogId });
+      
+      // Create like notification
+      try {
+        if (blog.authorId && blog.authorId !== userId) {
+          await NotificationService.createLikeNotification(blog.authorId, userId, blogId);
+        }
+      } catch (error) {
+        console.error('Error creating like notification:', error);
+        // Don't fail the like operation if notification fails
+      }
+      
       const count = await db.Like.count({ where: { postId: blogId, commentId: null } });
       return { liked: true, count };
     }

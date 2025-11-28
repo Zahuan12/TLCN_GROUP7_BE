@@ -14,6 +14,7 @@ const server = http.createServer(app);
 // Init Socket.IO và attach vào app
 const io = socketSetup(server);
 app.set('io', io);
+global.io = io; // Also set globally for services to access
 
 app.use(cors({
   origin: process.env.FRONTEND_URL,

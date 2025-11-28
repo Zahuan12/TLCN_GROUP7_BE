@@ -1,6 +1,24 @@
 const db = require('../models');
 
 module.exports = (io, socket) => {
+  // User join blog room để nhận real-time comments
+  socket.on('join_blog', (blogId) => {
+    if (!blogId) return;
+    
+    const roomName = `blog_${blogId}`;
+    socket.join(roomName);
+    console.log(`Socket ${socket.id} joined blog room: ${roomName}`);
+  });
+
+  // Leave blog room
+  socket.on('leave_blog', (blogId) => {
+    if (!blogId) return;
+    
+    const roomName = `blog_${blogId}`;
+    socket.leave(roomName);
+    console.log(`Socket ${socket.id} left blog room: ${roomName}`);
+  });
+
   // User join room để nhận notification về comments
   socket.on('joinUserRoom', (userId) => {
     if (!userId) return;
@@ -50,23 +68,29 @@ module.exports = (io, socket) => {
         notifications.push({ userId: parentCommentAuthorId, notification: replyNotif });
       }
 
-      // Emit qua socket
+      // Broadcast notifications
       notifications.forEach(({ userId, notification }) => {
-        io.to(`user_${userId}`).emit('newNotification', {
-          ...notification.toJSON(),
-          comment: {
-            id: comment.id,
-            content: comment.content,
-            author: comment.author
-          }
-        });
+        io.to(`user_${userId}`).emit('newNotification', notification);
       });
 
     } catch (error) {
-      console.error('[commentHandler] Error sending notification:', error);
+      console.error('❌ Error creating comment notifications:', error);
     }
   };
 
-  // Expose function để controller gọi
+  // Emit qua socket
+  const broadcastNewComment = (blogId, comment) => {
+    try {
+      io.to(`blog_${blogId}`).emit('new_comment', {
+        blogId,
+        comment
+      });
+    } catch (error) {
+      console.error('❌ Error broadcasting comment:', error);
+    }
+  };
+
+  // Expose functions
   socket.notifyNewComment = notifyNewComment;
+  socket.broadcastNewComment = broadcastNewComment;
 };

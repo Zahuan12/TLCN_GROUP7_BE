@@ -5,16 +5,86 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    message: { type: DataTypes.STRING, allowNull: false },
-    type: { type: DataTypes.ENUM('SYSTEM', 'FOLLOW', 'COMMENT', 'LIKE'), defaultValue: 'SYSTEM' },
-    isRead: { type: DataTypes.BOOLEAN, defaultValue: false }
+    // Recipient of the notification
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
+    },
+    message: { 
+      type: DataTypes.STRING, 
+      allowNull: false 
+    },
+    type: { 
+      type: DataTypes.ENUM('SYSTEM', 'FOLLOW', 'COMMENT', 'LIKE', 'REPLY'), 
+      defaultValue: 'SYSTEM' 
+    },
+    isRead: { 
+      type: DataTypes.BOOLEAN, 
+      defaultValue: false 
+    },
+    // Reference data for navigation
+    blogId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'blogs',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
+    },
+    commentId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'comments',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
+    },
+    // Who triggered the notification (liker, commenter, etc.)
+    actorId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      onDelete: 'SET NULL'
+    }
   }, {
     tableName: 'notifications',
     timestamps: true
   });
 
   Notification.associate = (models) => {
-    Notification.belongsTo(models.User, { foreignKey: 'userId' }); // gửi tới user nào
+    // Recipient of notification
+    Notification.belongsTo(models.User, { 
+      foreignKey: 'userId', 
+      as: 'user' 
+    });
+    
+    // Who performed the action
+    Notification.belongsTo(models.User, { 
+      foreignKey: 'actorId', 
+      as: 'actor' 
+    });
+    
+    // Related blog post
+    Notification.belongsTo(models.Blog, { 
+      foreignKey: 'blogId', 
+      as: 'blog' 
+    });
+    
+    // Related comment
+    Notification.belongsTo(models.Comment, { 
+      foreignKey: 'commentId', 
+      as: 'comment' 
+    });
   };
 
   return Notification;

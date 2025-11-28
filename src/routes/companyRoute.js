@@ -9,5 +9,6 @@ router.use(RoleMiddleware.checkRole(["COMPANY"]));
 
 router.get('/profile', CompanyController.getProfile);
 router.put('/profile', CompanyController.updateProfile);
+router.get('/students', CompanyController.getStudentsInCompanyCourses);
 
 module.exports = router;

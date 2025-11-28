@@ -38,6 +38,28 @@ class CompanyController {
       return ApiResponse.error(res, error.message || "Không cập nhật được hồ sơ", 400);
     }
   }
+
+  /**
+   * Lấy danh sách học sinh tham gia khóa học của company
+   */
+  async getStudentsInCompanyCourses(req, res) {
+    try {
+      const companyId = req.user.companyId;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      
+      if (!companyId) {
+        return ApiResponse.error(res, 'Không tìm thấy thông tin công ty', 400);
+      }
+      
+      const result = await CompanyService.getStudentsInCompanyCourses(companyId, page, limit);
+      
+      return ApiResponse.success(res, 'Lấy danh sách học sinh thành công', result);
+    } catch (error) {
+      console.error('Error getting students in company courses:', error);
+      return ApiResponse.error(res, error.message || 'Lỗi khi lấy danh sách học sinh', 500);
+    }
+  }
 }
 
 module.exports = new CompanyController();

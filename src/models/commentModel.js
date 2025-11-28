@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Comment.associate = (models) => {
-    Comment.belongsTo(models.User, { foreignKey: 'userId' });
+    Comment.belongsTo(models.User, { as: 'author', foreignKey: 'userId' });
     Comment.belongsTo(models.Blog, { foreignKey: 'postId' });
 
     // ✅ self-referencing
