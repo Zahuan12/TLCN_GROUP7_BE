@@ -13,7 +13,7 @@ class UserService {
     if (existingUser) throw new Error('Email đã tồn tại');
 
     // Tạo user
-    const user = await db.User.create({ email, username, fullName, role });
+    const user = await db.User.create({ email, username, fullName, role, verifyStatus: 'VERIFIED' });
     console.log('UserService.createUser created user with email:', user.email);
 
     // Hash password nếu LOCAL
@@ -48,7 +48,6 @@ class UserService {
       provider,
       providerId: provider === 'GOOGLE' ? providerId : null,
       password: hashedPassword,
-      verifyStatus: 'VERIFIED'
     });
 
     // Gửi email Kafka
