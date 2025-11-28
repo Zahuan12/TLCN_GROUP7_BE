@@ -87,7 +87,6 @@ class commentService {
             ]
         });
 
-        console.log('Fetched comments with user data:', JSON.stringify(rows[0], null, 2));
 
         return {
             total: count,

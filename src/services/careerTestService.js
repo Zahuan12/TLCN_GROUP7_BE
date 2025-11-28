@@ -27,31 +27,36 @@ class CareerTestService {
       PM: 0
     };
 
-    const mapping = { A: 'BACKEND', B: 'FRONTEND', C: 'BA', D: 'PM' };
+    const mapping = {
+      A: 'BACKEND', B: 'FRONTEND', C: 'BA', D: 'PM',
+      '0': 'BACKEND', '1': 'FRONTEND', '2': 'BA', '3': 'PM'
+    };
 
     // Duyệt qua từng đáp án để cộng điểm
     for (const ans of answers) {
       const career = mapping[ans.option];
-      if (career) scores[career]++;
+      if (career) {
+        scores[career]++;
+      }
     }
 
-    // Xác định ngành phù hợp nhất
     const bestCareer = Object.keys(scores).reduce((a, b) =>
       scores[a] > scores[b] ? a : b
     );
 
-    // Cập nhật careerInterest cho sinh viên
     const student = await db.Student.findOne({ where: { userId } });
     if (!student) throw new Error('Không tìm thấy sinh viên');
 
     student.careerInterest = bestCareer;
+    student.major = bestCareer;
     await student.save();
 
-    return {
+    const result = {
       bestCareer,
       scores,
       message: this.getCareerDescription(bestCareer)
     };
+    return result;
   }
 
   getCareerDescription(career) {
