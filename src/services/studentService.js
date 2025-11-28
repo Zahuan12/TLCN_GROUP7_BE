@@ -164,6 +164,8 @@ class StudentService {
     }
 
     // Lấy danh sách test results
+    console.log('🔍 Getting test results for studentId:', studentId, 'careerPathId:', careerPathId);
+    
     const testResults = await db.StudentTestResult.findAll({
       where: { studentId },
       include: [
@@ -179,6 +181,18 @@ class StudentService {
           required: true
         }
       ]
+    });
+
+    console.log('✅ Found test results:', testResults.length);
+    testResults.forEach(result => {
+      console.log('📊 Test result:', {
+        id: result.id,
+        testType: result.test?.type,
+        testTitle: result.test?.title,
+        score: result.score,
+        hasCareerPathId: !!result.test?.careerPathId,
+        hasLessonId: !!result.test?.lessonId
+      });
     });
 
     return {
@@ -242,11 +256,17 @@ class StudentService {
         enrolledAt: progress.createdAt,
         course: progress.careerPath,
         testResults: testResults.map(tr => ({
+          id: tr.id,
           testId: tr.testId,
           score: tr.score,
-          testTitle: tr.test.title,
-          testType: tr.test.type,
-          completedAt: tr.updatedAt
+          startedAt: tr.createdAt,
+          finishedAt: tr.updatedAt,
+          test: {
+            id: tr.test.id,
+            title: tr.test.title,
+            type: tr.test.type,
+            maxScore: tr.test.maxScore
+          }
         }))
       };
     }));
