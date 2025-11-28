@@ -1,3 +1,7 @@
+const models = require('./index');
+const vectorService = require('../services/vectorService');
+const qdrantConfig = require('../configs/qdrant');
+
 module.exports = (sequelize, DataTypes) => {
   const Test = sequelize.define('Test', {
     id: {
@@ -81,11 +85,11 @@ module.exports = (sequelize, DataTypes) => {
       const testWithRelations = await Test.findByPk(test.id, {
         include: [
           {
-            model: options.models.Lesson,
+            model: models.Lesson,
             as: 'lesson',
             attributes: ['title'],
             include: [{
-              model: options.models.CareerPath,
+              model: models.CareerPath,
               as: 'careerPath',
               attributes: ['title']
             }]
@@ -103,14 +107,15 @@ module.exports = (sequelize, DataTypes) => {
   Test.addHook('afterUpdate', async (test, options) => {
     try {
       // Re-index updated test
+      const models = require('./index');
       const testWithRelations = await Test.findByPk(test.id, {
         include: [
           {
-            model: options.models.Lesson,
+            model: models.Lesson,
             as: 'lesson',
             attributes: ['title'],
             include: [{
-              model: options.models.CareerPath,
+              model: models.CareerPath,
               as: 'careerPath',
               attributes: ['title']
             }]
@@ -118,7 +123,6 @@ module.exports = (sequelize, DataTypes) => {
         ]
       });
       
-      const vectorService = require('../services/vectorService');
       await vectorService.addTest(testWithRelations); // Upsert
     } catch (error) {
       console.error('Error updating test in vector database:', error);
@@ -127,8 +131,6 @@ module.exports = (sequelize, DataTypes) => {
 
   Test.addHook('afterDestroy', async (test, options) => {
     try {
-      const vectorService = require('../services/vectorService');
-      const qdrantConfig = require('../configs/qdrant');
       await vectorService.deleteFromVector(qdrantConfig.collections.TESTS, test.id);
     } catch (error) {
       console.error('Error deleting test from vector database:', error);

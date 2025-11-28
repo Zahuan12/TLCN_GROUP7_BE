@@ -1,5 +1,7 @@
+const models = require('./index');
 const vectorService = require('../services/vectorService');
 const qdrantConfig = require('../configs/qdrant');
+
 module.exports = (sequelize, DataTypes) => {
   const CareerPath = sequelize.define('CareerPath', {
     id: { 
@@ -38,10 +40,9 @@ module.exports = (sequelize, DataTypes) => {
     try {
       // Load with company data for vector indexing
       const careerPathWithCompany = await CareerPath.findByPk(careerPath.id, {
-        include: [{ model: options.models.Company, as: 'company', attributes: ['companyName'] }]
+        include: [{ model: models.Company, as: 'company', attributes: ['companyName'] }]
       });
       
-      const vectorService = require('../services/vectorService');
       await vectorService.addCareerPath(careerPathWithCompany);
     } catch (error) {
       console.error('Error adding career path to vector database:', error);
@@ -52,10 +53,9 @@ module.exports = (sequelize, DataTypes) => {
     try {
       // Re-index updated career path
       const careerPathWithCompany = await CareerPath.findByPk(careerPath.id, {
-        include: [{ model: options.models.Company, as: 'company', attributes: ['companyName'] }]
+        include: [{ model: models.Company, as: 'company', attributes: ['companyName'] }]
       });
       
-      const vectorService = require('../services/vectorService');
       await vectorService.addCareerPath(careerPathWithCompany); // Upsert
     } catch (error) {
       console.error('Error updating career path in vector database:', error);
@@ -64,8 +64,6 @@ module.exports = (sequelize, DataTypes) => {
 
   CareerPath.addHook('afterDestroy', async (careerPath, options) => {
     try {
-      const vectorService = require('../services/vectorService');
-      const qdrantConfig = require('../configs/qdrant');
       await vectorService.deleteFromVector(qdrantConfig.collections.CAREER_PATHS, careerPath.id);
     } catch (error) {
       console.error('Error deleting career path from vector database:', error);

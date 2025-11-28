@@ -1,3 +1,7 @@
+const models = require('./index');
+const vectorService = require('../services/vectorService');
+const qdrantConfig = require('../configs/qdrant');
+
 module.exports = (sequelize, DataTypes) => {
   const Lesson = sequelize.define('Lesson', {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
@@ -23,10 +27,9 @@ module.exports = (sequelize, DataTypes) => {
     try {
       // Load with career path data for vector indexing
       const lessonWithCareerPath = await Lesson.findByPk(lesson.id, {
-        include: [{ model: options.models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
+        include: [{ model: models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
       });
       
-      const vectorService = require('../services/vectorService');
       await vectorService.addLesson(lessonWithCareerPath);
     } catch (error) {
       console.error('Error adding lesson to vector database:', error);
@@ -37,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     try {
       // Re-index updated lesson
       const lessonWithCareerPath = await Lesson.findByPk(lesson.id, {
-        include: [{ model: options.models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
+        include: [{ model: models.CareerPath, as: 'careerPath', attributes: ['title', 'description'] }]
       });
       
       const vectorService = require('../services/vectorService');
@@ -49,8 +52,6 @@ module.exports = (sequelize, DataTypes) => {
 
   Lesson.addHook('afterDestroy', async (lesson, options) => {
     try {
-      const vectorService = require('../services/vectorService');
-      const qdrantConfig = require('../configs/qdrant');
       await vectorService.deleteFromVector(qdrantConfig.collections.LESSONS, lesson.id);
     } catch (error) {
       console.error('Error deleting lesson from vector database:', error);
