@@ -5,18 +5,62 @@ const TestService = require("./testService");
 
 class CareerPathService {
 
-  async createCareerPath(companyId, data, files) {
+  async createCareerPath(userId, data, files) {
 
-    const company = await db.Company.findOne({ where: { userId: companyId } });
-    if (!company) {
-      throw new Error('không tìm thấy công ty của bạn');
+    // Lấy thông tin user để kiểm tra role
+    const user = await db.User.findOne({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new Error("User không tồn tại");
+    }
+
+    let company = null;
+    let companyIdForPath = null;
+    
+    // Nếu user là COMPANY thì phải có company, nếu là ADMIN thì không cần
+    if (user.role === 'COMPANY') {
+      company = await db.Company.findOne({
+        where: { userId: userId }
+      });
+
+      if (!company) {
+        throw new Error('không tìm thấy công ty của bạn');
+      }
+      companyIdForPath = company.id;
+    } else if (user.role === 'ADMIN') {
+      // ADMIN tạo career path system - tìm hoặc tạo system company
+      let systemCompany = await db.Company.findOne({
+        where: { companyName: 'System Admin' }
+      });
+      
+      if (!systemCompany) {
+        // Tạo system company nếu chưa có
+        systemCompany = await db.Company.create({
+          companyName: 'System Admin',
+          description: 'System generated company for admin-created content',
+          website: null,
+          location: null,
+          size: null,
+          industry: null,
+          logo: null,
+          publicId: null,
+          userId: userId, // Gán cho admin user tạo đầu tiên
+          verified: true
+        });
+      }
+      
+      companyIdForPath = systemCompany.id;
+    } else {
+      throw new Error('Bạn không có quyền tạo career path');
     }
     // Tạo CareerPath trước
     const careerPath = await db.CareerPath.create({
       title: data.title,
       description: data.description || null,
       category: data.category || null,
-      companyId: company.id,
+      companyId: companyIdForPath, // Company ID hoặc System Company cho ADMIN
       image: null,
       publicId: null,
       status: data.status || 'DRAFT'
@@ -39,10 +83,37 @@ class CareerPathService {
     return careerPath;
   }
 
-  async updateCourse(companyId, courseId, data) {
+  async updateCourse(userId, courseId, data) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
-    if (course.companyId !== companyId) throw new Error("Không có quyền chỉnh sửa");
+
+    // Lấy thông tin user để kiểm tra role
+    const user = await db.User.findOne({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new Error("User không tồn tại");
+    }
+
+    // Kiểm tra quyền chỉnh sửa
+    if (user.role === 'COMPANY') {
+      const company = await db.Company.findOne({
+        where: { userId: userId }
+      });
+
+      if (!company) {
+        throw new Error('không tìm thấy công ty của bạn');
+      }
+
+      if (course.companyId !== company.id) {
+        throw new Error("Không có quyền chỉnh sửa");
+      }
+    } else if (user.role === 'ADMIN') {
+      // ADMIN có thể chỉnh sửa tất cả career path
+    } else {
+      throw new Error("Bạn không có quyền chỉnh sửa");
+    }
 
     await course.update({
       title: data.title ?? course.title,
@@ -70,20 +141,23 @@ class CareerPathService {
     return course;
   }
 
-  async deleteCourse(companyId, courseId, role) {
+  async deleteCourse(userId, courseId, role) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
 
-    const company = await db.Company.findOne({ where: { userId: companyId } });
-    if (!company) {
-      throw new Error('không tìm thấy công ty của bạn');
-    }
+    // Kiểm tra quyền xóa
+    if (role === "COMPANY") {
+      const company = await db.Company.findOne({ where: { userId: userId } });
+      if (!company) {
+        throw new Error('không tìm thấy công ty của bạn');
+      }
 
-    if (role === "COMPANY" && course.companyId !== company.id) {
-      throw new Error("Không có quyền xoá");
-    }
-
-    if (!["ADMIN", "COMPANY"].includes(role)) {
+      if (course.companyId !== company.id) {
+        throw new Error("Không có quyền xoá");
+      }
+    } else if (role === "ADMIN") {
+      // ADMIN có thể xóa tất cả career path
+    } else {
       throw new Error("Bạn không có quyền xoá course");
     }
 
@@ -129,19 +203,31 @@ class CareerPathService {
     });
     if (!course) throw new Error("Course không tồn tại");
 
-    // Check quyền xem: Owner (company) hoặc Admin có thể xem tất cả status
+    // Lấy thông tin user để kiểm tra role
+    let user = null;
+    let isAdmin = false;
+    if (userId) {
+      user = await db.User.findOne({ where: { id: userId } });
+      isAdmin = user?.role === 'ADMIN';
+    }
+
+    // Check quyền xem: Owner (company), Admin có thể xem tất cả status
     const isOwner = userId && course.company?.userId === userId;
+    const canViewAllStatus = isOwner || isAdmin;
 
     console.log('[CareerPathService.getCourseById] Debug:', {
       courseId,
       courseStatus: course.status,
       requestUserId: userId,
       courseOwnerUserId: course.company?.userId,
-      isOwner
+      userRole: user?.role,
+      isOwner,
+      isAdmin,
+      canViewAllStatus
     });
 
-    // Nếu không phải owner và course chưa published -> không cho xem
-    if (!isOwner && course.status !== 'PUBLISHED') {
+    // Nếu không phải owner/admin và course chưa published -> không cho xem
+    if (!canViewAllStatus && course.status !== 'PUBLISHED') {
       throw new Error("Course chưa được xuất bản");
     }
 
@@ -163,20 +249,50 @@ class CareerPathService {
     return course;
   }
 
-  async getCoursesByCompany(companyId, page = 1, limit = 10) {
-    const company = await db.Company.findOne({ where: { userId: companyId } });
-    if (!company) {
-      throw new Error('Không tìm thấy công ty của bạn');
+  async getCoursesByCompany(userId, page = 1, limit = 10) {
+    // Lấy thông tin user để kiểm tra role
+    const user = await db.User.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User không tồn tại');
     }
 
     const offset = (page - 1) * limit;
-
-    const { rows, count } = await db.CareerPath.findAndCountAll({
-      where: { companyId: company.id },
+    let queryOptions = {
       limit,
       offset,
-      order: [["createdAt", "DESC"]]
-    });
+      order: [["createdAt", "DESC"]],
+      include: [{ 
+        model: db.Company, 
+        as: 'company', 
+        attributes: ['id', 'companyName', 'userId'] 
+      }]
+    };
+
+    if (user.role === 'ADMIN') {
+      // Admin xem các career path được tạo thông qua System Admin company
+      // Tìm System Admin company
+      const systemCompany = await db.Company.findOne({
+        where: { companyName: 'System Admin' }
+      });
+      
+      if (systemCompany) {
+        queryOptions.where = { companyId: systemCompany.id };
+      } else {
+        // Nếu chưa có System Admin company thì trả về rỗng
+        queryOptions.where = { companyId: null };
+      }
+    } else if (user.role === 'COMPANY') {
+      // Company chỉ xem career path của mình
+      const company = await db.Company.findOne({ where: { userId: userId } });
+      if (!company) {
+        throw new Error('Không tìm thấy công ty của bạn');
+      }
+      queryOptions.where = { companyId: company.id };
+    } else {
+      throw new Error('Bạn không có quyền xem career path');
+    }
+
+    const { rows, count } = await db.CareerPath.findAndCountAll(queryOptions);
 
     return {
       total: count,
@@ -186,14 +302,30 @@ class CareerPathService {
     };
   }
 
-  async updateCourseStatus(companyId, courseId, status) {
+  async updateCourseStatus(userId, courseId, status) {
     const course = await db.CareerPath.findByPk(courseId);
     if (!course) throw new Error("Course không tồn tại");
 
-    const company = await db.Company.findOne({ where: { userId: companyId } });
-    if (!company) throw new Error('Không tìm thấy công ty của bạn');
+    // Lấy thông tin user để kiểm tra role
+    const user = await db.User.findOne({
+      where: { id: userId }
+    });
 
-    if (course.companyId !== company.id) throw new Error("Không có quyền chỉnh sửa");
+    if (!user) {
+      throw new Error("User không tồn tại");
+    }
+
+    // Kiểm tra quyền chỉnh sửa
+    if (user.role === 'COMPANY') {
+      const company = await db.Company.findOne({ where: { userId: userId } });
+      if (!company) throw new Error('Không tìm thấy công ty của bạn');
+
+      if (course.companyId !== company.id) throw new Error("Không có quyền chỉnh sửa");
+    } else if (user.role === 'ADMIN') {
+      // ADMIN có thể chỉnh sửa status của tất cả career path
+    } else {
+      throw new Error("Bạn không có quyền chỉnh sửa");
+    }
 
     await course.update({ status });
     return course;

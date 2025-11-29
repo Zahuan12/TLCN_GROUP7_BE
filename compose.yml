@@ -6,14 +6,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: tlcn-backend:latest
+    image: twelveti/tlcn-backend:latest
     container_name: tlcn-backend
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - HOST_NAME =${HOST_NAME}
+      - HOST_NAME=${HOST_NAME}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_NAME=${DB_NAME}
@@ -39,10 +39,8 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-    env_file:
-      - .env
     networks:
-      - tlcn-network
+      - do-an-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health", "||", "exit", "1"]
@@ -52,5 +50,5 @@ services:
       start_period: 40s
 
 networks:
-  tlcn-network:
+  do-an-network:
     driver: bridge
