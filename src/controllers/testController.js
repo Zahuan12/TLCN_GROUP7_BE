@@ -1,5 +1,5 @@
 const TestService = require("../services/testService");
-const ApiResponse = require("../utils/ApiResponse");
+const ApiResponse = require("../utils/apiResponse");
 
 class TestController {
   async create(req, res) {

@@ -1,7 +1,7 @@
 // controllers/careerTestController.js
 const careerTestService = require('../services/careerTestService');
 const CareerTestService = require('../services/careerTestService');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 class CareerTestController {
   async getTest(req, res) {

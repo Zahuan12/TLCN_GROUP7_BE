@@ -1,5 +1,5 @@
 const NotificationService = require('../services/notificationService');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 class NotificationController {
   async list(req, res) {

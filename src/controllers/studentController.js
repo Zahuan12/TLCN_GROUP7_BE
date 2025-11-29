@@ -1,4 +1,4 @@
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const studentService = require('../services/studentService');
 const UserService = require('../services/userService'); 
 class StudentController {

@@ -1,4 +1,4 @@
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const ChatService = require('../services/chatService');
 
 class ChatController {

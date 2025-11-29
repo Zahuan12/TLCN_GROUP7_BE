@@ -1,5 +1,5 @@
 const ChallengeTestService = require('../services/challengeTestService');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 class ChallengeTestController {
 

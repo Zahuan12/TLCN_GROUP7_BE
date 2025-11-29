@@ -1,5 +1,5 @@
 const authService = require('../services/authService');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 class AuthController {
   async login(req, res) {
