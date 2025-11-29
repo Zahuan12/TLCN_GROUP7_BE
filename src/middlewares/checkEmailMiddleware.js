@@ -4,25 +4,25 @@ const validator = require("deep-email-validator");
 const emailAttempts = new Map();
 const ipAttempts = new Map();
 
-// Cleanup old entries every 10 minutes
+// Cleanup old entries every 15 minutes
 setInterval(() => {
   const now = Date.now();
-  const tenMinutes = 10 * 60 * 1000;
+  const fifteenMinutes = 15 * 60 * 1000;
   
   for (const [key, data] of emailAttempts.entries()) {
-    if (now - data.firstAttempt > tenMinutes) {
+    if (now - data.firstAttempt > fifteenMinutes) {
       emailAttempts.delete(key);
     }
   }
   
   for (const [key, data] of ipAttempts.entries()) {
-    if (now - data.firstAttempt > tenMinutes) {
+    if (now - data.firstAttempt > fifteenMinutes) {
       ipAttempts.delete(key);
     }
   }
-}, 10 * 60 * 1000);
+}, 15 * 60 * 1000);
 
-// Common spam/disposable email domains
+// Only block obvious disposable email domains
 const blockedDomains = [
   '10minutemail.com',
   'guerrillamail.com',
@@ -31,24 +31,24 @@ const blockedDomains = [
   'yopmail.com',
   'throwaway.email',
   'temp-mail.org',
-  'emailtemp.org',
-  'dispostable.com',
-  'getnada.com'
+  'getairmail.com',
+  'maildrop.cc',
+  'sharklasers.com'
 ];
 
-// Suspicious patterns in email
-const suspiciousPatterns = [
-  /\d{8,}/, // 8+ consecutive digits
-  /[a-z]{20,}/, // 20+ consecutive letters
-  /(.)\1{4,}/, // Same character 5+ times
-  /^[a-z]+\d+@/, // Simple pattern: letters + numbers
-  /(test|spam|fake|temp|disposable)/i
+// Very obvious spam patterns only
+const spamPatterns = [
+  /(.)\1{6,}/, // Same character 7+ times (aaaaaaa)
+  /\d{12,}/, // 12+ consecutive digits
+  /(spam|fake|test123|admin123)/i // Obvious spam words
 ];
 
 module.exports = async function checkEmail(req, res, next) {
   try {
     const { email } = req.body;
-    const clientIp = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+    const clientIp = req.ip || req.connection.remoteAddress || 
+                      req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                      req.headers['x-real-ip'] || 'unknown';
 
     if (!email) {
       return res.status(400).json({
@@ -60,7 +60,7 @@ module.exports = async function checkEmail(req, res, next) {
     const emailLower = email.toLowerCase().trim();
     const now = Date.now();
 
-    // Rate limiting per email
+    // Relaxed rate limiting per email (5 attempts in 15 minutes)
     const emailKey = emailLower;
     const emailData = emailAttempts.get(emailKey);
     
@@ -68,8 +68,7 @@ module.exports = async function checkEmail(req, res, next) {
       emailData.count++;
       emailData.lastAttempt = now;
       
-      // Block if more than 3 attempts in 10 minutes
-      if (emailData.count > 3) {
+      if (emailData.count > 5) {
         return res.status(429).json({
           success: false,
           message: "Too many attempts with this email. Please try again later."
@@ -83,26 +82,27 @@ module.exports = async function checkEmail(req, res, next) {
       });
     }
 
-    // Rate limiting per IP
-    const ipData = ipAttempts.get(clientIp);
-    
-    if (ipData) {
-      ipData.count++;
-      ipData.lastAttempt = now;
+    // Relaxed rate limiting per IP (20 attempts in 15 minutes)
+    if (clientIp !== 'unknown') {
+      const ipData = ipAttempts.get(clientIp);
       
-      // Block if more than 10 attempts in 10 minutes
-      if (ipData.count > 10) {
-        return res.status(429).json({
-          success: false,
-          message: "Too many registration attempts from this IP. Please try again later."
+      if (ipData) {
+        ipData.count++;
+        ipData.lastAttempt = now;
+        
+        if (ipData.count > 20) {
+          return res.status(429).json({
+            success: false,
+            message: "Too many registration attempts from this IP. Please try again later."
+          });
+        }
+      } else {
+        ipAttempts.set(clientIp, {
+          count: 1,
+          firstAttempt: now,
+          lastAttempt: now
         });
       }
-    } else {
-      ipAttempts.set(clientIp, {
-        count: 1,
-        firstAttempt: now,
-        lastAttempt: now
-      });
     }
 
     // Basic email format validation
@@ -117,69 +117,72 @@ module.exports = async function checkEmail(req, res, next) {
 
     const domain = emailLower.split('@')[1];
 
-    // Check blocked domains
-    if (blockedDomains.some(blocked => domain.includes(blocked))) {
+    // Check only obvious disposable domains
+    if (blockedDomains.some(blocked => domain === blocked)) {
       return res.status(400).json({
         success: false,
         message: "Disposable email addresses are not allowed"
       });
     }
 
-    // Check suspicious patterns
-    if (suspiciousPatterns.some(pattern => pattern.test(emailLower))) {
+    // Check only very obvious spam patterns
+    if (spamPatterns.some(pattern => pattern.test(emailLower))) {
       return res.status(400).json({
         success: false,
-        message: "Email appears to be invalid or suspicious"
+        message: "Email appears to be invalid"
       });
     }
 
-    // Allow common educational domains
-    const allowedDomains = [
+    // Trusted domains - skip further validation
+    const trustedDomains = [
       'gmail.com',
       'yahoo.com', 
       'outlook.com',
       'hotmail.com',
+      'icloud.com',
+      'protonmail.com',
       'student.hcmute.edu.vn',
       'hcmute.edu.vn',
       'edu.vn'
     ];
 
-    const isEducationalDomain = allowedDomains.some(allowedDomain => 
-      domain === allowedDomain || domain.endsWith('.' + allowedDomain)
+    const isTrustedDomain = trustedDomains.some(trusted => 
+      domain === trusted || domain.endsWith('.' + trusted)
     );
 
-    if (!isEducationalDomain) {
-      // More strict validation for non-educational domains
-      try {
-        const result = await validator.validate({
-          email: emailLower,
-          validateSMTP: false,
-          validateDNS: true,
-          validateRegex: true
-        });
+    if (isTrustedDomain) {
+      // Skip deep validation for trusted domains
+      console.log(`✅ Trusted domain registration: ${emailLower}`);
+      return next();
+    }
 
-        if (!result.valid) {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid email: ${result.reason || "unknown reason"}`
-          });
-        }
-      } catch (validationError) {
-        console.warn("Email validation warning:", validationError);
-        // For non-educational domains, be more strict
+    // For other domains, do light validation
+    try {
+      const result = await validator.validate({
+        email: emailLower,
+        validateSMTP: false, // Skip SMTP for speed
+        validateDNS: true,
+        validateRegex: true
+      });
+
+      if (!result.valid) {
+        console.log(`❌ Email validation failed: ${emailLower} - ${result.reason}`);
         return res.status(400).json({
           success: false,
-          message: "Email validation failed"
+          message: "Please use a valid email address"
         });
       }
+
+      console.log(`✅ Non-trusted domain passed validation: ${emailLower}`);
+    } catch (validationError) {
+      console.warn("Email validation error:", validationError.message);
+      // Allow on validation errors to avoid blocking legitimate users
     }
 
     next();
   } catch (err) {
-    console.error("Email validation error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
+    console.error("Email middleware error:", err);
+    // In case of errors, allow the request to proceed
+    next();
   }
 };

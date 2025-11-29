@@ -1,49 +1,66 @@
-# Use Node.js 18 LTS Alpine for smaller image size
-FROM node:18-alpine
+# Multi-stage Dockerfile for TLCN Backend
+# Stage 1: Build dependencies
+FROM node:18-alpine AS dependencies
 
-# Install system dependencies for native modules and Sharp
+# Install build tools for native modules
 RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    vips-dev \
+    libc6-compat \
     pkgconfig \
-    libc6-compat
+    vips-dev
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files for dependency installation
+# Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production --silent && \
-    npm cache clean --force
+# Install all dependencies (including devDependencies for building)
+RUN npm ci && npm cache clean --force
 
-# Create uploads and logs directories
-RUN mkdir -p uploads logs
+# Stage 2: Production image
+FROM node:18-alpine AS production
 
-# Copy application source code
+# Install runtime dependencies
+RUN apk add --no-cache \
+    vips \
+    curl
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy application files
 COPY index.js ./
 COPY src/ ./src/
 COPY tools/ ./tools/
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs
+# Create necessary directories
+RUN mkdir -p uploads logs && \
+    chown -R nodejs:nodejs /app
 
-# Change ownership of app directory to nodejs user
-RUN chown -R nodejs:nodejs /app
-
-# Switch to non-root user
+# Switch to nodejs user
 USER nodejs
 
-# Expose the application port
+# Expose application port
 EXPOSE 5000
 
-# Add health check to monitor container health
-HEALTHCHECK --interval=30s --timeout=15s --start-period=20s --retries=3 \
-    CMD node -e "const http=require('http');http.get('http://localhost:5000/health',(res)=>{process.exit(res.statusCode===200?0:1)}).on('error',()=>process.exit(1)).setTimeout(10000,()=>process.exit(1));"
+# Health check
+HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 
-# Start the application
+# Set production environment
+ENV NODE_ENV=production
+
+# Start application
 CMD ["node", "index.js"]
