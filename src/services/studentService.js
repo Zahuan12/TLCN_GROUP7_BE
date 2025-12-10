@@ -204,6 +204,7 @@ class StudentService {
         {
           model: db.CareerPath,
           as: 'careerPath',
+          required: true, // Only get progress with existing CareerPath (filters deleted courses)
           include: [
             {
               model: db.Company,
