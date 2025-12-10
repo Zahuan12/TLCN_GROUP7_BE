@@ -1,5 +1,5 @@
 const ConversationService = require("../services/conversationService");
-const ApiResponse = require("../utils/ApiResponse");
+const ApiResponse = require("../utils/apiResponse");
 
 class ConversationController {
 

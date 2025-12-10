@@ -18,6 +18,15 @@ const followRouter = require('./followRoute');
 const vectorRouter = require('./vectorRoute');
 
 function route(app) {
+    // Health check endpoint for Docker
+    app.get("/health", (req, res) => {
+        res.status(200).json({
+            status: "OK",
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    });
+
     app.use("/auth",authRouter)
     app.use("/users",userRouter)
     app.use("/blogs",blogRouter)

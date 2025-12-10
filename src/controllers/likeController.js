@@ -1,4 +1,4 @@
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const LikeService = require('../services/likeService');
 
 class LikeController {

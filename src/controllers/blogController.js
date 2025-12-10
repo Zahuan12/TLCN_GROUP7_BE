@@ -1,5 +1,5 @@
 const BlogService = require('../services/blogService');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 class BlogController {
   async create(req, res) {

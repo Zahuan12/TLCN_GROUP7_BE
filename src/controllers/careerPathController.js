@@ -1,7 +1,7 @@
 const CareerPathService = require("../services/careerPathService");
 const LessonService = require("../services/lessonService");
 const TestService = require("../services/testService");
-const ApiResponse = require("../utils/ApiResponse");
+const ApiResponse = require("../utils/apiResponse");
 
 class CareerPathController {
   async create(req, res) {

@@ -1,4 +1,4 @@
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const UserService = require('../services/userService');
 const CompanyService = require('../services/companyService');
 

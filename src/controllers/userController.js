@@ -1,5 +1,5 @@
 const UserService = require('../services/userService');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 class UserController {
   async create(req, res) {
