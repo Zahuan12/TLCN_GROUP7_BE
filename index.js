@@ -32,8 +32,19 @@ route(app);
 
 // Kết nối DB và start server
 connectDB().then(async () => {
-  // Initialize Kafka
-  await kafkaModule.init();
+  // Initialize Kafka (only in production)
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      await kafkaModule.init();
+      console.log('Kafka initialized successfully');
+    } catch (error) {
+      console.error('Kafka initialization failed:', error.message);
+      console.warn('Continuing without Kafka...');
+    }
+  } else {
+    console.log('Skipping Kafka initialization (development mode)');
+  }
+  
   // Initialize Vector Database
   try {
     // Test connection first
